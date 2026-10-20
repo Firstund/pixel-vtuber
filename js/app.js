@@ -8,6 +8,7 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
+import { mic, startMic, micTick } from './mic.js?v=20261020-mic1';
 const CHARS = { fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 let ch = null; // {key, base, m, img, S}
 
@@ -28,12 +29,18 @@ async function loadChar(key) {
 
 // ---------- 설정 UI ----------
 const cfg = {};
-for (const id of ['tMouth', 'tBlink', 'tSmile', 'smooth', 'animFps']) {
+for (const id of ['tMouth', 'tBlink', 'tSmile', 'smooth', 'animFps', 'micSens']) {
   const el = $(id), out = el.nextElementSibling;
   const upd = () => { cfg[id] = parseFloat(el.value); out.textContent = el.value; };
   el.addEventListener('input', upd); upd();
 }
 cfg.choppy = $('choppy').checked; $('choppy').onchange = e => { cfg.choppy = e.target.checked; };
+cfg.micExpr = $('micExpr').checked; $('micExpr').onchange = e => { cfg.micExpr = e.target.checked; };
+$('micBtn').onclick = async () => {
+  $('micBtn').disabled = true; showErr('');
+  if (await startMic()) { $('micBtn').textContent = '🎤 마이크 켜짐'; $('meter').hidden = false; }
+  else { showErr(mic.err); $('micBtn').disabled = false; }
+};
 cfg.mirror = $('mirror').checked; $('mirror').onchange = e => { cfg.mirror = e.target.checked; };
 if (params.get('mirror') === '0') { $('mirror').checked = false; cfg.mirror = false; }
 if (params.get('choppy') === '0') { $('choppy').checked = false; cfg.choppy = false; }
@@ -88,6 +95,7 @@ const HOLD_MS = 100;  // 한 단계에 최소 머무는 시간
 const pose = { yawL: 2, pitL: 1, rollL: 1, k: 0, p: 0, r: 0, shown: { k: 0, p: 0, r: 0 }, changedAt: { k: 0, p: 0, r: 0 }, lastTick: 0, tick: 0 };
 const st = { eye: 0, mouth: 0, brow: 0, ears: 0, sparkle: false, expr: 'auto' };
 let mouthLv = 0, eyeLv = 0;
+const exc = { since: 0, calmSince: 0, hi: false };
 
 function decide(b, auto, t) {
   const jaw = smooth('jaw', b.jaw), fun = smooth('funnel', b.funnel), smi = smooth('smile', b.smile);
@@ -110,6 +118,12 @@ function decide(b, auto, t) {
     if (jaw > 0.45 && (brow > 0.45 || wide > 0.4)) ex = 'surprised';
     else if (eyeLv === 0 && smi > cfg.tSmile + 0.25) ex = 'happy';
   }
+  // --- 마이크 신남: 0.7초 이상 높으면 '웃음+반짝'으로, 충분히 차분해지면 해제 (히스테리시스)
+  const e = mic.score;
+  if (e > 0.6) { exc.calmSince = 0; if (!exc.since) exc.since = t; if (t - exc.since > 700) exc.hi = true; }
+  else { exc.since = 0; if (e < 0.35) { if (!exc.calmSince) exc.calmSince = t; if (t - exc.calmSince > 1200) exc.hi = false; } else exc.calmSince = 0; }
+  if (!mic.on) exc.hi = false;
+  if (exc.hi && cfg.micExpr && exprOverride === 'auto' && ex === 'auto') ex = 'happy';
   if (ex === 'happy') { if (eyeLv === 0) eye = 3; sparkle = true; browF = 1; if (mouth === 0) mouth = 3; }
   if (ex === 'tired') { if (eyeLv < 2) eye = 4; browF = 2; ears = 1; }
   if (ex === 'surprised') { if (eyeLv < 2) eye = 5; browF = 1; mouth = mouth >= 1 ? 5 : 4; }
@@ -156,23 +170,31 @@ function draw(t) {
   octx.clearRect(0, 0, S, S);
   const [px, py] = ch.m.neckPivot;
   const shoulder = Math.abs(pose.shown.k) === 2 ? Math.sign(pose.shown.k) : 0; // 크게 돌릴 때 어깨 1px
+  // 신남 효과 (정수 픽셀, 프레임 단위 계단식)
+  const ex = mic.on ? mic.score : 0;
+  const wigFps = 3 + 10 * ex, wig = ex > 0.25 ? Math.floor(t * wigFps / 1000) % 2 : 0;
+  const wigDy = wig ? -(ex > 0.7 ? 2 : 1) : 0, wigDx = (ex > 0.7 && wig) ? 1 : 0;
+  const bounce = ex > 0.75 ? -(Math.floor(t * 6 / 1000) % 2) : 0;
+  window.__fx = { ex, wigDy, bounce };
   const headGroup = names => {
     hctx.clearRect(0, 0, S, S);
-    for (const [n, f] of names) L(hctx, n, f);
+    for (const [n, f, dx = 0, dy = 0] of names) L(hctx, n, f, row, dx, dy);
     octx.save();
     if (pose.shown.r) { octx.translate(px, py); octx.rotate(pose.shown.r * ROLL_DEG * Math.PI / 180); octx.translate(-px, -py); }
     octx.drawImage(hc, Math.round(shoulder * 0.5), breath);
     octx.restore();
   };
-  if (I.tail) L(octx, 'tail', Math.floor(animT / (cfg.choppy ? 2 : 4)) % 4, 0);
-  headGroup(I.ears ? (st.ears ? [['hair_back', 0]] : [['ears', 0], ['hair_back', 0]]) : [['hair_back', 0]]);
+  const tailF = mic.on ? Math.floor(t * (4 + 10 * ex) / 1000) % 4 : Math.floor(animT / (cfg.choppy ? 2 : 4)) % 4;
+  if (I.tail) L(octx, 'tail', tailF, 0);
+  headGroup(I.ears ? (st.ears ? [['hair_back', 0]] : [['ears', 0, wigDx, wigDy], ['hair_back', 0]]) : [['hair_back', 0]]);
   L(octx, 'body', 0, 0, shoulder, breath ? 0 : 0);
   const front = [['head', 0], ['eyes', st.eye], ['mouth', st.mouth], ['hair_front', 0], ['brows', st.brow]];
   if (I.ears && st.ears) front.splice(0, 0, ['ears', 1]);
   headGroup(front);
   if (st.sparkle && I.sparkle) L(octx, 'sparkle', Math.floor(animT / 2) % 3, 0);
+  if (ex > 0.85 && I.sparkle) { const o = Math.round(S / 16); L(octx, 'sparkle', (Math.floor(t * 8 / 1000) + 1) % 3, 0, -o, o); L(octx, 'sparkle', (Math.floor(t * 8 / 1000) + 2) % 3, 0, o, Math.round(o * 1.5)); }
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(off, 0, 0, S, S, 0, 0, S * scale, S * scale);
+  ctx.drawImage(off, 0, 0, S, S, 0, bounce * scale, S * scale, S * scale);
 }
 
 // ---------- 자동 깜빡임 ----------
@@ -268,9 +290,11 @@ function loop(t) {
   else if (mode === 'demo') { b = demoValues(t); if (!(b.blink > 0)) auto = autoBlink(t); }
   else if (mode !== 'camera' || t - faceSeen > 1000) { b = { ...zero }; auto = autoBlink(t); if (mode === 'camera') status('얼굴을 찾는 중…'); }
   else if (mode === 'camera') status(`추적 중 (${window.__delegate})`);
+  micTick(t, cfg.micSens);
   decide(b, auto, t);
   draw(t);
   frames++; window.__frames++;
+  if (mic.on) { $('meterBar').style.width = Math.round(mic.score * 100) + '%'; $('meterBar').classList.toggle('hi', exc.hi); }
   $('pose').textContent = `각도 요${pose.shown.k} 피치${pose.shown.p} 롤${pose.shown.r}`;
   if (t - fpsT > 1000) { $('fps').textContent = 'FPS: ' + Math.round(frames * 1000 / (t - fpsT)); frames = 0; fpsT = t; }
   requestAnimationFrame(loop);
@@ -280,4 +304,4 @@ $('char').value = ch.key;
 requestAnimationFrame(loop);
 // 테스트용: 가짜 MediaPipe 결과를 실제 readResult 경로로 주입
 function simResult(r) { mode = 'sim'; latest = readResult(r); }
-window.__app = { st, pose, cfg, startCamera, loadModel, loadChar, setExpr, simResult };
+window.__app = { mic, exc, st, pose, cfg, startCamera, loadModel, loadChar, setExpr, simResult };
