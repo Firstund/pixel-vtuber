@@ -8,14 +8,14 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261021-fox61';
-import { createTail, tailStep } from './tail.js?v=20261021-fox61';
-const CHARS = { fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
+import { mic, startMic, micTick } from './mic.js?v=20261021-fox62';
+import { createTail, tailStep } from './tail.js?v=20261021-fox62';
+const CHARS = { fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 let ch = null; // {key, base, m, img, S}
 
 // ---------- 캐릭터 로드 ----------
 async function loadChar(key) {
-  const base = CHARS[key] || CHARS.fox61;
+  const base = CHARS[key] || CHARS.fox62;
   const m = await (await fetch(base + 'manifest.json')).json();
   const img = {};
   await Promise.all(m.layers.map(n => new Promise((res, rej) => {
@@ -80,7 +80,7 @@ function resize() {
 new ResizeObserver(resize).observe($('stage'));
 
 // ---------- 스무딩 / 히스테리시스 ----------
-const sm = { jaw: 0, funnel: 0, smile: 0, blink: 0, brow: 0, wide: 0, yaw: 0, pitch: 0, roll: 0 };
+const sm = { stretch: 0, asym: 0, puff: 0, squint: 0, jaw: 0, funnel: 0, smile: 0, blink: 0, brow: 0, wide: 0, yaw: 0, pitch: 0, roll: 0 };
 function smooth(key, v, k = cfg.smooth) { sm[key] = sm[key] * k + v * (1 - k); return sm[key]; }
 // 오름차순 경계값 ths, 현재 레벨 cur 기준 ±h 여유(데드존)를 둔 레벨
 function level(v, cur, ths, h) {
@@ -98,6 +98,46 @@ const st = { eye: 0, mouth: 0, brow: 0, ears: 0, sparkle: false, expr: 'auto' };
 let mouthLv = 0, eyeLv = 0;
 const exc = { since: 0, calmSince: 0, hi: false };
 
+// v6.2: 큰 입 — 벌림 5단계 + 모양(오/이/웃음/한쪽웃음/볼부풀림), 히스테리시스로 계단식 전환
+const MV = { lv: 0, shape: 'n', since: 0 };
+const MI = n => ch.m.mouth.indexOf(n);
+const MSETS = { // 표정별 [닫힘, 작게, 중간, 크게, 아주 크게]
+  auto: ['cat', 'o1', 'o2', 'o3', 'o4'], happy: ['smile_c', 'smile_m', 'smile_m', 'smile_b', 'smile_b'],
+  tired: ['sigh', 'sigh', 'o2', 'yawn', 'yawn'], surprised: ['ro_s', 'ro_s', 'ro_b', 'ro_b', 'ro_b'], smug: ['smirk', 'grin', 'grin', 'grin', 'grin'],
+};
+function decideV2(b, jaw, fun, smi, ex, eye, browF) {
+  const H = 0.04, t0 = cfg.tMouth;
+  MV.lv = level(jaw, MV.lv, [t0 * 0.7, t0 * 1.5, t0 * 2.4, t0 * 3.4], H);
+  const str = smooth('stretch', b.stretch || 0), asym = smooth('asym', b.smileAsym || 0), puff = smooth('puff', b.puff || 0), sq = smooth('squint', b.squint || 0);
+  const hyst = (cur, name, v, th) => v > th + (cur === name ? -0.06 : 0.06);
+  let shape = 'n';
+  if (hyst(MV.shape, 'puff', puff, 0.4) && MV.lv <= 1) shape = 'puff';
+  else if (hyst(MV.shape, 'o', fun, 0.35)) shape = 'o';
+  else if (hyst(MV.shape, 'smile', smi, cfg.tSmile)) shape = 'smile';
+  else if (hyst(MV.shape, 'asym', Math.abs(asym), 0.25)) shape = 'asym';
+  else if (hyst(MV.shape, 'ee', str, 0.3) && MV.lv >= 1) shape = 'ee';
+  MV.shape = shape;
+  const lv = MV.lv; let name, blush = false;
+  if (ex === 'auto') {
+    if (shape === 'puff') { name = 'puff'; blush = true; }
+    else if (shape === 'o') name = lv >= 2 ? 'ro_b' : 'ro_s';
+    else if (shape === 'smile') { name = lv === 0 ? 'smile_c' : lv >= 3 ? 'smile_b' : 'smile_m'; blush = lv >= 3; }
+    else if (shape === 'asym') name = lv === 0 ? 'smirk' : 'grin';
+    else if (shape === 'ee') name = 'ee';
+    else name = MSETS.auto[lv];
+  } else name = (MSETS[ex] || MSETS.auto)[lv];
+  // 눈을 입에 맞춰 미세 조정
+  if (eye < 2) {
+    if ((ex === 'happy' || shape === 'smile') && lv >= 3) eye = 3;                 // 크게 웃으면 ^^
+    else if ((ex === 'surprised' || shape === 'o') && lv >= 3) eye = 5;             // 크게 놀라면 눈 크게
+    else if (ex === 'auto' && sq > (eye === 1 ? 0.45 : 0.55)) eye = 1;              // 찡그림 → 가늘게
+    else if (ex === 'auto' && b.brow > 0.55 && shape === 'n') { eye = 4; browF = 2; } // 걱정
+  }
+  if (ex === 'happy' && lv >= 3) blush = true;
+  const mouth = Math.max(0, MI(name));
+  window.__mv = { lv, shape, name, eye, blush };
+  return { eye, mouth, browF, blush };
+}
 function decide(b, auto, t) {
   const jaw = smooth('jaw', b.jaw), fun = smooth('funnel', b.funnel), smi = smooth('smile', b.smile);
   const blink = smooth('blink', b.blink, Math.min(cfg.smooth, 0.3)); // 깜빡임은 빠르게
@@ -134,7 +174,9 @@ function decide(b, auto, t) {
   if (eye >= ne) eye = { 4: 1, 5: 0, 6: 1 }[eye] ?? 0;
   if (mouth >= nm) mouth = { 5: 2, 6: 3 }[mouth] ?? 0;
   if (browF >= nb) browF = browF === 3 ? 1 : 0;
-  Object.assign(st, { eye, mouth, brow: browF, ears, sparkle, expr: ex });
+  let blush = false;
+  if (ch.m.mouthV2) ({ eye, mouth, browF, blush } = decideV2(b, jaw, fun, smi, ex, eye, browF));
+  Object.assign(st, { eye, mouth, brow: browF, ears, sparkle, expr: ex, blush: blush || (ex === 'happy') || exc.hi });
   // --- 머리 각도: 양자화 + 히스테리시스 (데드존)
   pose.yawL = level(yaw, pose.yawL, YAW_TH, YAW_H);
   pose.pitL = level(pitch, pose.pitL, PIT_TH, PIT_H);
@@ -245,6 +287,7 @@ function drawFace(t) {
   const D = (im, col, dy = 0) => octx.drawImage(im, col * S, row * S, S, S, 0, breath + dy, S, S);
   D(I.base, 0);
   D(I.eyes, st.eye); D(I.mouth, st.mouth); D(I.brows, st.brow);
+  if (I.blush && st.blush) D(I.blush, 0);
   D(I.ears, tired && I.ears.width > S ? 1 : 0, tired ? 0 : wigDy);
   octx.restore();
   const animT = cfg.choppy ? pose.tick : Math.floor(t / 60);
@@ -305,7 +348,7 @@ function autoBlink(t) {
 
 // ---------- 얼굴 추적 ----------
 let landmarker = null, mode = 'idle', lastVideoTime = -1, faceSeen = 0;
-const zero = { jaw: 0, funnel: 0, smile: 0, blink: 0, brow: 0, wide: 0, yaw: 0, pitch: 0, roll: 0 };
+const zero = { stretch: 0, smileAsym: 0, puff: 0, squint: 0, jaw: 0, funnel: 0, smile: 0, blink: 0, brow: 0, wide: 0, yaw: 0, pitch: 0, roll: 0 };
 let latest = { ...zero };
 async function loadModel() {
   status('모델 불러오는 중…');
@@ -325,6 +368,8 @@ function readResult(r) {
     smile: ((m.mouthSmileLeft || 0) + (m.mouthSmileRight || 0)) / 2,
     blink: Math.max(m.eyeBlinkLeft || 0, m.eyeBlinkRight || 0) * 0.5 + ((m.eyeBlinkLeft || 0) + (m.eyeBlinkRight || 0)) / 4,
     brow: m.browInnerUp || 0, wide: ((m.eyeWideLeft || 0) + (m.eyeWideRight || 0)) / 2, yaw: 0, pitch: 0, roll: 0,
+    stretch: ((m.mouthStretchLeft || 0) + (m.mouthStretchRight || 0)) / 2, smileAsym: (m.mouthSmileLeft || 0) - (m.mouthSmileRight || 0),
+    puff: m.cheekPuff || 0, squint: ((m.eyeSquintLeft || 0) + (m.eyeSquintRight || 0)) / 2,
   };
   const mat = r.facialTransformationMatrixes?.[0]?.data;
   if (mat) { // column-major 4x4
@@ -398,7 +443,7 @@ function loop(t) {
   if (t - fpsT > 1000) { $('fps').textContent = 'FPS: ' + Math.round(frames * 1000 / (t - fpsT)); frames = 0; fpsT = t; }
   requestAnimationFrame(loop);
 }
-await loadChar(params.get('char') && CHARS[params.get('char')] ? params.get('char') : 'fox61');
+await loadChar(params.get('char') && CHARS[params.get('char')] ? params.get('char') : 'fox62');
 $('char').value = ch.key;
 requestAnimationFrame(loop);
 // 테스트용: 가짜 MediaPipe 결과를 실제 readResult 경로로 주입
