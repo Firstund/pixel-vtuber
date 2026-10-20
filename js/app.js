@@ -8,14 +8,14 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261020-fox51';
-import { createTail, tailStep } from './tail.js?v=20261020-fox51';
-const CHARS = { fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
+import { mic, startMic, micTick } from './mic.js?v=20261021-fox52';
+import { createTail, tailStep } from './tail.js?v=20261021-fox52';
+const CHARS = { fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 let ch = null; // {key, base, m, img, S}
 
 // ---------- 캐릭터 로드 ----------
 async function loadChar(key) {
-  const base = CHARS[key] || CHARS.fox51;
+  const base = CHARS[key] || CHARS.fox52;
   const m = await (await fetch(base + 'manifest.json')).json();
   const img = {};
   await Promise.all(m.layers.map(n => new Promise((res, rej) => {
@@ -228,7 +228,33 @@ function drawFull2(t) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(off, 0, 0, S, S, 0, bounce * scale, S * scale, S * scale);
 }
+// fox52: v5 머리카락·몸 그림(얼굴 비움) + v3식 깔끔한 눈/입/눈썹 레이어
+function drawFace(t) {
+  const S = ch.S, I = ch.img, row = angleRow();
+  const ex = mic.on ? mic.score : 0;
+  const wig = ex > 0.25 ? Math.floor(t * (3 + 10 * ex) / 1000) % 2 : 0;
+  const wigDy = wig ? -(ex > 0.7 ? 2 : 1) : 0;
+  const bounce = ex > 0.75 ? -(Math.floor(t * 6 / 1000) % 2) : 0;
+  const breath = Math.floor(t / 1200) % 2, tired = st.expr === 'tired';
+  window.__fx = { ex, wigDy, bounce };
+  octx.clearRect(0, 0, S, S);
+  const [rx, ry] = ch.m.rollPivot || [S / 2, S - 1];
+  octx.save();
+  if (pose.shown.r) { octx.translate(rx, ry); octx.rotate(pose.shown.r * ROLL_DEG * 0.55 * Math.PI / 180); octx.translate(-rx, -ry); }
+  if (I.tail) octx.drawImage(I.tail, tailFrame(t, ex) * S, 0, S, S, 0, 0, S, S);
+  const D = (im, col, dy = 0) => octx.drawImage(im, col * S, row * S, S, S, 0, breath + dy, S, S);
+  D(I.base, 0);
+  D(I.eyes, st.eye); D(I.mouth, st.mouth); D(I.brows, st.brow);
+  D(I.ears, 0, tired ? 0 : wigDy);
+  octx.restore();
+  const animT = cfg.choppy ? pose.tick : Math.floor(t / 60);
+  if (I.sparkle && ex > 0.85) { const o = Math.round(S / 16); octx.drawImage(I.sparkle, ((Math.floor(t * 8 / 1000) + 1) % 3) * S, 0, S, S, -o, o, S, S); }
+  if (I.sparkle && st.sparkle) octx.drawImage(I.sparkle, (Math.floor(animT / 2) % 3) * S, 0, S, S, 0, 0, S, S);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(off, 0, 0, S, S, 0, bounce * scale, S * scale, S * scale);
+}
 function draw(t) {
+  if (ch.m.mode === 'face') return drawFace(t);
   if (ch.m.mode === 'full2') return drawFull2(t);
   if (ch.m.mode === 'full') {
     const ex = mic.on ? mic.score : 0;
@@ -372,7 +398,7 @@ function loop(t) {
   if (t - fpsT > 1000) { $('fps').textContent = 'FPS: ' + Math.round(frames * 1000 / (t - fpsT)); frames = 0; fpsT = t; }
   requestAnimationFrame(loop);
 }
-await loadChar(params.get('char') && CHARS[params.get('char')] ? params.get('char') : 'fox51');
+await loadChar(params.get('char') && CHARS[params.get('char')] ? params.get('char') : 'fox52');
 $('char').value = ch.key;
 requestAnimationFrame(loop);
 // 테스트용: 가짜 MediaPipe 결과를 실제 readResult 경로로 주입
