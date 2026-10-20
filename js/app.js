@@ -264,7 +264,8 @@ function loop(t) {
     const r = readResult(landmarker.detectForVideo(video, t));
     if (r) { latest = r; faceSeen = t; }
   }
-  if (mode === 'demo') { b = demoValues(t); if (!(b.blink > 0)) auto = autoBlink(t); }
+  if (mode === 'sim') { b = latest; }
+  else if (mode === 'demo') { b = demoValues(t); if (!(b.blink > 0)) auto = autoBlink(t); }
   else if (mode !== 'camera' || t - faceSeen > 1000) { b = { ...zero }; auto = autoBlink(t); if (mode === 'camera') status('얼굴을 찾는 중…'); }
   else if (mode === 'camera') status(`추적 중 (${window.__delegate})`);
   decide(b, auto, t);
@@ -277,4 +278,6 @@ function loop(t) {
 await loadChar(params.get('char') && CHARS[params.get('char')] ? params.get('char') : 'fox3');
 $('char').value = ch.key;
 requestAnimationFrame(loop);
-window.__app = { st, pose, cfg, startCamera, loadModel, loadChar, setExpr };
+// 테스트용: 가짜 MediaPipe 결과를 실제 readResult 경로로 주입
+function simResult(r) { mode = 'sim'; latest = readResult(r); }
+window.__app = { st, pose, cfg, startCamera, loadModel, loadChar, setExpr, simResult };
