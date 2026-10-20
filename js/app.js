@@ -8,14 +8,14 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261020-fox5';
-import { createTail, tailStep } from './tail.js?v=20261020-fox5';
-const CHARS = { fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
+import { mic, startMic, micTick } from './mic.js?v=20261020-fox51';
+import { createTail, tailStep } from './tail.js?v=20261020-fox51';
+const CHARS = { fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 let ch = null; // {key, base, m, img, S}
 
 // ---------- 캐릭터 로드 ----------
 async function loadChar(key) {
-  const base = CHARS[key] || CHARS.fox5;
+  const base = CHARS[key] || CHARS.fox51;
   const m = await (await fetch(base + 'manifest.json')).json();
   const img = {};
   await Promise.all(m.layers.map(n => new Promise((res, rej) => {
@@ -372,7 +372,7 @@ function loop(t) {
   if (t - fpsT > 1000) { $('fps').textContent = 'FPS: ' + Math.round(frames * 1000 / (t - fpsT)); frames = 0; fpsT = t; }
   requestAnimationFrame(loop);
 }
-await loadChar(params.get('char') && CHARS[params.get('char')] ? params.get('char') : 'fox5');
+await loadChar(params.get('char') && CHARS[params.get('char')] ? params.get('char') : 'fox51');
 $('char').value = ch.key;
 requestAnimationFrame(loop);
 // 테스트용: 가짜 MediaPipe 결과를 실제 readResult 경로로 주입
