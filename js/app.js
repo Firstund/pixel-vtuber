@@ -124,11 +124,11 @@ function decide(b, auto, t) {
   pose.yawL = level(yaw, pose.yawL, YAW_TH, YAW_H);
   pose.pitL = level(pitch, pose.pitL, PIT_TH, PIT_H);
   pose.rollL = level(roll, pose.rollL, ROLL_TH, ROLL_H);
-  // MediaPipe(원본 카메라 기준): yaw>0 = 사용자가 "자기 왼쪽"으로 고개를 돌림, pitch>0 = 위를 봄, roll>0 = 원본 영상에서 반시계 기울기
+  // MediaPipe(원본 카메라 기준): yaw>0 = 사용자가 "자기 왼쪽"으로 고개를 돌림, pitch>0 = 아래를 봄(실측), roll>0 = 원본 영상에서 반시계 기울기
   // 스프라이트 k>0 = 캐릭터가 "화면 오른쪽"을 봄. 거울 모드(셀카처럼)면 사용자 왼쪽 → 화면 왼쪽.
   const yawStep = pose.yawL - 2;                 // -2..2 (사용자 기준)
   pose.k = cfg.mirror ? -yawStep : yawStep;
-  pose.p = 1 - pose.pitL;                         // pitch 위(+) → 스프라이트 p=-1(위)
+  pose.p = pose.pitL - 1;                         // 실측: MediaPipe pitch(+) = 고개 숙임 → 스프라이트 p=+1(아래)
   const rollStep = pose.rollL - 1;
   pose.r = cfg.mirror ? rollStep : -rollStep;     // 화면 회전 방향(+ = 시계방향)
   // --- 끊김 느낌: 각도는 낮은 애니메이션 fps에서만 갱신 + 최소 유지 시간
@@ -251,7 +251,7 @@ function demoValues(t) {
   if (exprOverride !== d.e) setExpr(d.e);
   const yaw = cfg.mirror ? -P[0] : P[0];   // 데모는 "화면 기준" 방향으로 보이도록 사용자 각도로 역변환
   const roll = cfg.mirror ? P[2] : -P[2];
-  return { ...zero, blink: d.blink || 0, jaw: d.talk ? (Math.sin(t / 90) > 0 ? 0.3 : 0.05) : (d.jaw || 0), yaw, pitch: P[1], roll };
+  return { ...zero, blink: d.blink || 0, jaw: d.talk ? (Math.sin(t / 90) > 0 ? 0.3 : 0.05) : (d.jaw || 0), yaw, pitch: -P[1], roll };   // 데모 P[1]>0 = 위
 }
 
 // ---------- 루프 ----------
