@@ -8,7 +8,8 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261020-tailnat';
+import { mic, startMic, micTick } from './mic.js?v=20261020-tail6';
+import { createTail, tailStep } from './tail.js?v=20261020-tail6';
 const CHARS = { fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 let ch = null; // {key, base, m, img, S}
 
@@ -162,41 +163,16 @@ function angleRow() {
   if (ch.nYaw === 1) return 0;
   return (p + 1) * ch.nYaw + (k + 2);
 }
-// 꼬리: N프레임(위상 0..1, 0.25/0.75 = 좌우 끝). 자연스러운 움직임:
-//  - 한 번의 흔들기 안에서 속도 변화 (끝에서 천천히 머물고 가운데는 빠르게 휙)
-//  - 끝에서 가끔 멈춤(hold), 가끔 2~3번 빠른 '휙휙'(flick), 랜덤이라 같은 패턴 반복 안 함
-//  - 신남: 기본 주기 3.6초 → 1.2초 (6단계, 0.5초마다 한 단계), flick 잦아지고 멈춤 짧아짐
-const TAIL_CALM = 3600, TAIL_EXC = 1200, TAIL_STEPS = 5, TAIL_FLICK = 750;
-const tailSt = { phase: 0, last: 0, step: 0, stepAt: 0, holdUntil: 0, flick: 0 };
-const ease = ph => 0.35 + 1.65 * Math.abs(Math.cos(2 * Math.PI * ph)); // 끝(0.25,0.75)에서 느림
-const EASE_MEAN = 0.35 + 1.65 * 2 / Math.PI;
+// 꼬리: 6가지 흔들기 패턴을 신남 정도에 따라 랜덤 선택 (js/tail.js). 신남은 6단계, 0.5초마다 한 단계씩만 변함.
+const TAIL_STEPS = 5, tailSt = createTail();
 function tailFrame(t, ex) {
   const n = (ch.m.tail | 0) || ((I_tailW() / ch.S) | 0) || 1;
   const dt = Math.min(200, t - (tailSt.last || t)); tailSt.last = t;
   const want = Math.round(Math.max(0, Math.min(1, ex)) * TAIL_STEPS);
   if (want !== tailSt.step && t - tailSt.stepAt > 500) { tailSt.step += Math.sign(want - tailSt.step); tailSt.stepAt = t; }
-  const x = tailSt.step / TAIL_STEPS;
-  const period = TAIL_CALM + (TAIL_EXC - TAIL_CALM) * x;
-  if (t >= tailSt.holdUntil) {
-    const per = tailSt.flick > 0 ? TAIL_FLICK : period;
-    const prev = tailSt.phase;
-    let ph = prev + dt / per * ease(prev) / EASE_MEAN;
-    // 끝을 지날 때: 가끔 멈춤
-    for (const edge of [0.25, 0.75]) {
-      if (prev < edge && ph >= edge && tailSt.flick === 0 && Math.random() < 0.45 - 0.25 * x) {
-        ph = edge; tailSt.holdUntil = t + (1 - 0.7 * x) * (350 + Math.random() * 1100);
-      }
-    }
-    // 한 바퀴 끝: flick 진행/시작
-    if (ph >= 1) {
-      ph -= 1;
-      if (tailSt.flick > 0) tailSt.flick--;
-      else if (Math.random() < 0.08 + 0.3 * x) tailSt.flick = 2 + (Math.random() < 0.5 ? 1 : 0);
-    }
-    tailSt.phase = ph;
-  }
-  window.__tail = { n, step: tailSt.step, period, flick: tailSt.flick, hold: t < tailSt.holdUntil };
-  return Math.floor(tailSt.phase * n) % n;
+  const f = tailStep(tailSt, t, dt, tailSt.step / TAIL_STEPS, n, () => window.__forceTail);
+  window.__tail = { n, step: tailSt.step, pattern: tailSt.cur, hist: [...tailSt.hist] };
+  return f;
 }
 function I_tailW() { return ch.img.tail ? ch.img.tail.width : 0; }
 function draw(t) {

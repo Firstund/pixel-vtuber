@@ -42,7 +42,7 @@
   "up",
   "droop"
  ],
- "tail": 16,
+ "tail": 24,
  "sparkle": 3,
  "neckPivot": [
   64,
