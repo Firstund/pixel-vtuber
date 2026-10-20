@@ -8,7 +8,7 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261020-mic1';
+import { mic, startMic, micTick } from './mic.js?v=20261020-tail16';
 const CHARS = { fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 let ch = null; // {key, base, m, img, S}
 
@@ -162,6 +162,21 @@ function angleRow() {
   if (ch.nYaw === 1) return 0;
   return (p + 1) * ch.nYaw + (k + 2);
 }
+// 꼬리: N프레임 순환. 한 바퀴 시간 = 평온 3.6초 → 최고 신남 1.2초.
+// 속도는 6단계로 양자화하고 0.5초마다 한 단계씩만 바뀌어 갑자기 빨라지지 않음.
+const TAIL_CALM = 3600, TAIL_EXC = 1200, TAIL_STEPS = 5;
+const tailSt = { phase: 0, last: 0, step: 0, stepAt: 0 };
+function tailFrame(t, ex) {
+  const n = (ch.m.tail | 0) || ((I_tailW() / ch.S) | 0) || 1;
+  const dt = Math.min(200, t - (tailSt.last || t)); tailSt.last = t;
+  const want = Math.round(Math.max(0, Math.min(1, ex)) * TAIL_STEPS);
+  if (want !== tailSt.step && t - tailSt.stepAt > 500) { tailSt.step += Math.sign(want - tailSt.step); tailSt.stepAt = t; }
+  const period = TAIL_CALM + (TAIL_EXC - TAIL_CALM) * tailSt.step / TAIL_STEPS;
+  tailSt.phase = (tailSt.phase + dt / period) % 1;
+  window.__tail = { n, step: tailSt.step, period };
+  return Math.floor(tailSt.phase * n) % n;
+}
+function I_tailW() { return ch.img.tail ? ch.img.tail.width : 0; }
 function draw(t) {
   const S = ch.S, I = ch.img, row = angleRow();
   const animT = cfg.choppy ? pose.tick : Math.floor(t / 60);
@@ -184,8 +199,7 @@ function draw(t) {
     octx.drawImage(hc, Math.round(shoulder * 0.5), breath);
     octx.restore();
   };
-  const tailF = mic.on ? Math.floor(t * (4 + 10 * ex) / 1000) % 4 : Math.floor(animT / (cfg.choppy ? 2 : 4)) % 4;
-  if (I.tail) L(octx, 'tail', tailF, 0);
+  if (I.tail) L(octx, 'tail', tailFrame(t, ex), 0);
   headGroup(I.ears ? (st.ears ? [['hair_back', 0]] : [['ears', 0, wigDx, wigDy], ['hair_back', 0]]) : [['hair_back', 0]]);
   L(octx, 'body', 0, 0, shoulder, breath ? 0 : 0);
   const front = [['head', 0], ['eyes', st.eye], ['mouth', st.mouth], ['hair_front', 0], ['brows', st.brow]];
