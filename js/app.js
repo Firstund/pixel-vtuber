@@ -8,12 +8,12 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-const CHARS = { fox2: 'assets/fox2/', test: 'assets/test/' };
+const CHARS = { fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 let ch = null; // {key, base, m, img, S}
 
 // ---------- 캐릭터 로드 ----------
 async function loadChar(key) {
-  const base = CHARS[key] || CHARS.fox2;
+  const base = CHARS[key] || CHARS.fox3;
   const m = await (await fetch(base + 'manifest.json')).json();
   const img = {};
   await Promise.all(m.layers.map(n => new Promise((res, rej) => {
@@ -274,7 +274,7 @@ function loop(t) {
   if (t - fpsT > 1000) { $('fps').textContent = 'FPS: ' + Math.round(frames * 1000 / (t - fpsT)); frames = 0; fpsT = t; }
   requestAnimationFrame(loop);
 }
-await loadChar(params.get('char') && CHARS[params.get('char')] ? params.get('char') : 'fox2');
+await loadChar(params.get('char') && CHARS[params.get('char')] ? params.get('char') : 'fox3');
 $('char').value = ch.key;
 requestAnimationFrame(loop);
 window.__app = { st, pose, cfg, startCamera, loadModel, loadChar, setExpr };

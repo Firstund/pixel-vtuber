@@ -1,5 +1,6 @@
 # 픽셀 VTuber — 퇴근여우
 정적 파일: index.html, style.css, js/app.js, assets/<캐릭터>/ (manifest.json + PNG 시트)
+- `assets/fox3/` 퇴근여우 v3 (128px, 기본). 같은 각도 시트 구조.
 - `assets/fox2/` 퇴근여우 v2 (96px). 머리 레이어는 각도 시트: 행 = (pitch+1)*5 + (yaw+2), yaw −2…+2(+ = 화면 오른쪽을 봄), pitch −1 위 / 0 / +1 아래
   - eyes: 기본·반눈·감음·웃음·피곤·놀람·의기양양 / mouth: :3·살짝·크게·미소·O·경악·의기양양 / brows: 기본·올림·걱정·한쪽올림 / ears: 서있음·처짐 / tail 4 / sparkle 3
 - `assets/test/` 구버전 64px 테스트 캐릭터
