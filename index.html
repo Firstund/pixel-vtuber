@@ -1,0 +1,21 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>픽셀 VTuber</title><link rel="stylesheet" href="style.css"></head><body>
+<div id="stage"><canvas id="c" width="64" height="64"></canvas></div>
+<div id="hud"><span id="fps">FPS: -</span> <span id="status">대기 중</span></div>
+<video id="video" playsinline muted autoplay></video>
+<div id="panel">
+ <h1>픽셀 VTuber</h1>
+ <button id="start">▶ 카메라 시작</button>
+ <button id="demo">데모 모드</button>
+ <div id="err" hidden></div>
+ <label><input type="checkbox" id="preview"> 카메라 미리보기</label>
+ <label>입 벌림 기준 <input type="range" id="tMouth" min="0.05" max="0.6" step="0.01" value="0.18"><output></output></label>
+ <label>눈 깜빡임 기준 <input type="range" id="tBlink" min="0.2" max="0.8" step="0.01" value="0.5"><output></output></label>
+ <label>미소 기준 <input type="range" id="tSmile" min="0.1" max="0.8" step="0.01" value="0.4"><output></output></label>
+ <label>부드러움 <input type="range" id="smooth" min="0" max="0.95" step="0.01" value="0.5"><output></output></label>
+ <label>배경색 <input type="color" id="bg" value="#00ff00"> <button id="green">그린스크린</button></label>
+ <button id="clean">클린 뷰 (OBS용)</button>
+ <p class="hint">클린 뷰 해제: 화면을 두 번 탭 / Esc</p>
+</div>
+<script type="module" src="js/app.js"></script></body></html>
