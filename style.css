@@ -12,3 +12,5 @@ body{background:#00ff00;display:flex}
 body.preview #video{display:block}
 body.clean #panel,body.clean #hud,body.clean #video{display:none!important}
 @media (orientation:portrait) and (max-width:800px){body{flex-direction:column}#panel{width:100%;max-height:45vh}#stage{flex:1}#video{bottom:auto;top:8px}}
+.row{display:flex;flex-wrap:wrap;gap:4px}.row button{flex:1;padding:8px 4px;font-size:13px;background:#4a3d57}.row button.on{background:#e39b52}
+select{font-size:14px;padding:4px;border-radius:6px}
