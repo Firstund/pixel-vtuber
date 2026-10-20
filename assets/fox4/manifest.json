@@ -1,0 +1,70 @@
+{
+ "name": "퇴근여우 v4",
+ "mode": "full",
+ "S": 128,
+ "yaw": [
+  -2,
+  -1,
+  0,
+  1,
+  2
+ ],
+ "pitch": [
+  -1,
+  0,
+  1
+ ],
+ "angleIndex": "(pitch+1)*5+(yaw+2)",
+ "full": {
+  "exprs": [
+   "neutral",
+   "talk",
+   "happy",
+   "tired",
+   "surprised",
+   "smug"
+  ],
+  "colsPerExpr": 2,
+  "cols": "expr*2 + (blink?1:0)"
+ },
+ "eyes": [
+  "open",
+  "half",
+  "closed",
+  "happy",
+  "tired",
+  "surprised",
+  "smug"
+ ],
+ "mouth": [
+  "cat",
+  "slight",
+  "wide",
+  "smile",
+  "o",
+  "shock",
+  "smug"
+ ],
+ "brows": [
+  "neutral",
+  "raised",
+  "worried",
+  "smug"
+ ],
+ "tail": 24,
+ "sparkle": 3,
+ "neckPivot": [
+  64,
+  88
+ ],
+ "rollPivot": [
+  64,
+  127
+ ],
+ "layers": [
+  "tail",
+  "frames",
+  "sparkle"
+ ],
+ "source": "Gemini 재해석 시트 → 128px 픽셀화(팔레트 36색)"
+}

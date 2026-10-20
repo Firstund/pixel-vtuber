@@ -8,14 +8,14 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261020-tail6';
-import { createTail, tailStep } from './tail.js?v=20261020-tail6';
-const CHARS = { fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
+import { mic, startMic, micTick } from './mic.js?v=20261020-fox4';
+import { createTail, tailStep } from './tail.js?v=20261020-fox4';
+const CHARS = { fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 let ch = null; // {key, base, m, img, S}
 
 // ---------- 캐릭터 로드 ----------
 async function loadChar(key) {
-  const base = CHARS[key] || CHARS.fox3;
+  const base = CHARS[key] || CHARS.fox4;
   const m = await (await fetch(base + 'manifest.json')).json();
   const img = {};
   await Promise.all(m.layers.map(n => new Promise((res, rej) => {
@@ -175,7 +175,37 @@ function tailFrame(t, ex) {
   return f;
 }
 function I_tailW() { return ch.img.tail ? ch.img.tail.width : 0; }
+// 통짜 프레임 캐릭터(fox4): 표정 × 피치 × 요 그림을 통째로 고름. 꼬리는 별도 레이어(애니메이션).
+const FULL_EXPR = { auto: 0, happy: 2, tired: 3, surprised: 4, smug: 5 };
+function fullCol() {
+  let e = FULL_EXPR[st.expr] ?? 0;
+  if (e === 0 && (st.mouth === 1 || st.mouth === 2 || st.mouth === 4 || st.mouth === 5)) e = 1; // 입 벌림 → 말하기 그림
+  const blink = st.eye === 2 || eyeLv === 2;
+  return e * 2 + (blink ? 1 : 0);
+}
+function drawFull(t, ex, bounce) {
+  const S = ch.S, I = ch.img, row = angleRow();
+  octx.clearRect(0, 0, S, S);
+  const [rx, ry] = ch.m.rollPivot || [S / 2, S - 1];
+  octx.save();
+  if (pose.shown.r) { octx.translate(rx, ry); octx.rotate(pose.shown.r * ROLL_DEG * 0.55 * Math.PI / 180); octx.translate(-rx, -ry); }
+  if (I.tail) octx.drawImage(I.tail, tailFrame(t, ex) * S, 0, S, S, 0, 0, S, S);
+  octx.drawImage(I.frames, fullCol() * S, row * S, S, S, 0, Math.floor(t / 1200) % 2, S, S); // 숨쉬기 1px
+  octx.restore();
+  const animT = cfg.choppy ? pose.tick : Math.floor(t / 60);
+  if (I.sparkle && ex > 0.85) { const o = Math.round(S / 16); octx.drawImage(I.sparkle, ((Math.floor(t * 8 / 1000) + 1) % 3) * S, 0, S, S, -o, o, S, S); }
+  if (I.sparkle && st.sparkle && st.expr !== 'happy') octx.drawImage(I.sparkle, (Math.floor(animT / 2) % 3) * S, 0, S, S, 0, 0, S, S);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(off, 0, 0, S, S, 0, bounce * scale, S * scale, S * scale);
+}
 function draw(t) {
+  if (ch.m.mode === 'full') {
+    const ex = mic.on ? mic.score : 0;
+    const bounce = ex > 0.75 ? -(Math.floor(t * 6 / 1000) % 2) : 0;
+    const wig = ex > 0.25 ? Math.floor(t * (3 + 10 * ex) / 1000) % 2 : 0; // 귀가 그림에 붙어 있어 귀 대신 통통 튀기로 표현
+    window.__fx = { ex, wigDy: wig ? -1 : 0, bounce: bounce || (ex > 0.45 && wig ? -1 : 0), col: fullCol() };
+    return drawFull(t, ex, window.__fx.bounce);
+  }
   const S = ch.S, I = ch.img, row = angleRow();
   const animT = cfg.choppy ? pose.tick : Math.floor(t / 60);
   const breath = Math.floor(t / 1200) % 2;
@@ -311,7 +341,7 @@ function loop(t) {
   if (t - fpsT > 1000) { $('fps').textContent = 'FPS: ' + Math.round(frames * 1000 / (t - fpsT)); frames = 0; fpsT = t; }
   requestAnimationFrame(loop);
 }
-await loadChar(params.get('char') && CHARS[params.get('char')] ? params.get('char') : 'fox3');
+await loadChar(params.get('char') && CHARS[params.get('char')] ? params.get('char') : 'fox4');
 $('char').value = ch.key;
 requestAnimationFrame(loop);
 // 테스트용: 가짜 MediaPipe 결과를 실제 readResult 경로로 주입
