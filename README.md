@@ -1,6 +1,7 @@
 # 픽셀 VTuber — 퇴근여우
 정적 파일: index.html, style.css, js/app.js, assets/<캐릭터>/ (manifest.json + PNG 시트)
-- `assets/fox62/` 퇴근여우 v6.2 (기본): 큰 입(16종: 닫힘 :3, 벌림 4단계, 오/큰오, 웃음 D, 이-, 한쪽웃음, 씩 웃음, 한숨, 하품, 볼 부풀림) + 볼터치. 블렌드셰이프(jawOpen/funnel/smile/stretch/좌우 비대칭/cheekPuff/eyeSquint/browInnerUp)로 입·눈 모양 선택.
+- `assets/fox63/` 퇴근여우 v6.3 (기본): 만화식 과장된 큰 입(최대 약 29×26px, 얼굴 선 밖으로 나갈 수 있음), 아주 크게 벌리면 눈 1px 위로.
+- `assets/fox62/` 퇴근여우 v6.2: 큰 입(16종: 닫힘 :3, 벌림 4단계, 오/큰오, 웃음 D, 이-, 한쪽웃음, 씩 웃음, 한숨, 하품, 볼 부풀림) + 볼터치. 블렌드셰이프(jawOpen/funnel/smile/stretch/좌우 비대칭/cheekPuff/eyeSquint/browInnerUp)로 입·눈 모양 선택.
 - `assets/fox61/` 퇴근여우 v6.1: 이목구비를 원본 시트 위치로 되돌림(옆 이동 제거), 아래 각도 입/눈 위치 보정, 앞머리에 가리는 눈썹 숨김, 턱선 그림자 제거, 처진 귀 잔여물·목 정리.
 - `assets/fox6/` 퇴근여우 v6: v5.3 + 옆모습 눈/입 위치 보정, 눈썹을 앞머리 위에, 피곤 시 귀 처짐 레이어, 앞머리·턱 아래 1톤 그림자, 가디건 잔흔 정리.
 - `assets/fox53/` 퇴근여우 v5.3: v5.2 + 가디건 빈틈/흰 줄 메움, 목 좁힘·턱 그림자.

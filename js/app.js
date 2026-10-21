@@ -8,14 +8,14 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261021-fox62';
-import { createTail, tailStep } from './tail.js?v=20261021-fox62';
-const CHARS = { fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
+import { mic, startMic, micTick } from './mic.js?v=20261021-fox63';
+import { createTail, tailStep } from './tail.js?v=20261021-fox63';
+const CHARS = { fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 let ch = null; // {key, base, m, img, S}
 
 // ---------- 캐릭터 로드 ----------
 async function loadChar(key) {
-  const base = CHARS[key] || CHARS.fox62;
+  const base = CHARS[key] || CHARS.fox63;
   const m = await (await fetch(base + 'manifest.json')).json();
   const img = {};
   await Promise.all(m.layers.map(n => new Promise((res, rej) => {
@@ -135,6 +135,7 @@ function decideV2(b, jaw, fun, smi, ex, eye, browF) {
   }
   if (ex === 'happy' && lv >= 3) blush = true;
   const mouth = Math.max(0, MI(name));
+  st.mouthLv = lv;
   window.__mv = { lv, shape, name, eye, blush };
   return { eye, mouth, browF, blush };
 }
@@ -286,7 +287,8 @@ function drawFace(t) {
   if (I.tail) octx.drawImage(I.tail, tailFrame(t, ex) * S, 0, S, S, 0, 0, S, S);
   const D = (im, col, dy = 0) => octx.drawImage(im, col * S, row * S, S, S, 0, breath + dy, S, S);
   D(I.base, 0);
-  D(I.eyes, st.eye); D(I.mouth, st.mouth); D(I.brows, st.brow);
+  const edy = ch.m.mouthBig && st.mouthLv >= 4 ? -1 : 0;
+  D(I.eyes, st.eye, edy); D(I.mouth, st.mouth); D(I.brows, st.brow, edy);
   if (I.blush && st.blush) D(I.blush, 0);
   D(I.ears, tired && I.ears.width > S ? 1 : 0, tired ? 0 : wigDy);
   octx.restore();
@@ -443,7 +445,7 @@ function loop(t) {
   if (t - fpsT > 1000) { $('fps').textContent = 'FPS: ' + Math.round(frames * 1000 / (t - fpsT)); frames = 0; fpsT = t; }
   requestAnimationFrame(loop);
 }
-await loadChar(params.get('char') && CHARS[params.get('char')] ? params.get('char') : 'fox62');
+await loadChar(params.get('char') && CHARS[params.get('char')] ? params.get('char') : 'fox63');
 $('char').value = ch.key;
 requestAnimationFrame(loop);
 // 테스트용: 가짜 MediaPipe 결과를 실제 readResult 경로로 주입

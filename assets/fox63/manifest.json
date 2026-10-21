@@ -1,0 +1,68 @@
+{
+ "name": "퇴근여우 v6.3",
+ "S": 128,
+ "mode": "face",
+ "yaw": [
+  -2,
+  -1,
+  0,
+  1,
+  2
+ ],
+ "pitch": [
+  -1,
+  0,
+  1
+ ],
+ "angleIndex": "(pitch+1)*5+(yaw+2)",
+ "eyes": [
+  "open",
+  "half",
+  "closed",
+  "happy",
+  "tired",
+  "surprised",
+  "smug"
+ ],
+ "mouth": [
+  "cat",
+  "o1",
+  "o2",
+  "o3",
+  "o4",
+  "ro_s",
+  "ro_b",
+  "smile_m",
+  "smile_b",
+  "ee",
+  "smirk",
+  "grin",
+  "sigh",
+  "yawn",
+  "smile_c",
+  "puff"
+ ],
+ "brows": [
+  "neutral",
+  "raised",
+  "worried",
+  "smug"
+ ],
+ "tail": 24,
+ "rollPivot": [
+  64,
+  127
+ ],
+ "layers": [
+  "tail",
+  "base",
+  "eyes",
+  "mouth",
+  "brows",
+  "blush",
+  "ears",
+  "sparkle"
+ ],
+ "mouthV2": true,
+ "mouthBig": true
+}
