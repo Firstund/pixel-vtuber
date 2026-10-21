@@ -1,6 +1,6 @@
 <!doctype html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>픽셀 VTuber — 퇴근여우</title><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css?v=20261022-f2"></head><body>
+<title>픽셀 VTuber — 퇴근여우</title><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css?v=20261022-f3"></head><body>
 <div id="stage"><canvas id="c" width="96" height="96"></canvas></div>
 <div id="hud"><span id="fps">FPS: -</span> <span id="status">대기 중</span> <span id="pose"></span><div id="meter" hidden>신남 <span class="track"><span id="meterBar"></span></span></div></div>
 <video id="video" playsinline muted autoplay></video>
@@ -12,6 +12,8 @@
  <button id="micBtn">🎤 마이크 켜기</button>
  <div id="err" hidden></div>
  <div id="expr" class="row"><button data-e="auto" class="on">자동</button><button data-e="happy">웃음</button><button data-e="tired">피곤</button><button data-e="surprised">놀람</button><button data-e="smug">의기양양</button></div>
+ <div class="hint">소품 (눌러서 켜기/끄기)</div>
+ <div id="props" class="row"></div>
  <label>신남 감도 <input type="range" id="micSens" min="0.5" max="2" step="0.05" value="1"><output></output></label>
  <label><input type="checkbox" id="micExpr" checked> 신나면 표정 자동 변경 (웃음+반짝)</label>
  <label><input type="checkbox" id="autoBlink" checked> 자동 눈 깜빡임 (얼굴 인식 안 될 때)</label>
@@ -32,4 +34,4 @@
  <div id="obsMsg" class="hint" hidden></div>
  <p class="hint">단축키: 1 자동 · 2 웃음 · 3 피곤 · 4 놀람 · 5 의기양양 · h 클린 뷰 · Esc/더블탭 해제</p>
 </div>
-<script type="module" src="js/app.js?v=20261022-f2"></script></body></html>
+<script type="module" src="js/app.js?v=20261022-f3"></script></body></html>

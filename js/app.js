@@ -8,13 +8,24 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261022-f2';
-import { createTail, tailStep } from './tail.js?v=20261022-f2';
-import { createEars, earStep } from './ears.js?v=20261022-f2';
+import { mic, startMic, micTick } from './mic.js?v=20261022-f3';
+import { createTail, tailStep } from './tail.js?v=20261022-f3';
+import { createEars, earStep } from './ears.js?v=20261022-f3';
 const earSt = createEars(); let earLast = 0;
-import { createAhoge, ahogeStep } from './ahoge.js?v=20261022-f2';
+import { createAhoge, ahogeStep } from './ahoge.js?v=20261022-f3';
 const ahoSt = createAhoge(); let ahoLast = 0;
 const CHARS = { fox71: 'assets/fox71/', fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
+// ---------- 소품 (모든 캐릭터 공통, 128px 캔버스 기준 위치) ----------
+const PROPS = { coffee: { name: '☕ 커피', x: 76, y: 94, hold: true }, laptop: { name: '💻 노트북', x: 44, y: 98 }, bag: { name: '👜 출근 가방', x: 0, y: 97 }, plant: { name: '🪴 화분', x: 98, y: 96 } };
+const propImg = {};
+for (const k of Object.keys(PROPS)) { const i = new Image(); i.src = 'assets/props/' + k + '.png?v=20261022-f3'; propImg[k] = i; }
+function drawProps(c, S, breath) {
+  const on = window.__PS?.props || [], f = S / 128;
+  for (const k of Object.keys(PROPS)) {
+    if (!on.includes(k) || !propImg[k].complete || !propImg[k].naturalWidth) continue;
+    const p = PROPS[k]; c.drawImage(propImg[k], Math.round(p.x * f), Math.round(p.y * f) + (p.hold ? breath : 0), Math.round(32 * f), Math.round(32 * f));
+  }
+}
 let ch = null; // {key, base, m, img, S}
 
 // ---------- 캐릭터 로드 ----------
@@ -47,6 +58,16 @@ for (const id of ['autoBlink', 'breath']) {
   const el = $(id); if (id in PS) el.checked = PS[id];
   if (params.get(id) === '0') el.checked = false;
   cfg[id] = el.checked; el.onchange = e => { cfg[id] = e.target.checked; PS[id] = cfg[id]; savePS(); };
+}
+{ // 소품 선택 UI
+  if (params.get('props') !== null) PS.props = params.get('props').split(',').filter(k => k in PROPS);
+  PS.props = (PS.props || []).filter(k => k in PROPS);
+  const box = $('props');
+  for (const [k, p] of Object.entries(PROPS)) {
+    const b = document.createElement('button'); b.textContent = p.name; b.dataset.p = k; b.classList.toggle('on', PS.props.includes(k));
+    b.onclick = () => { const i = PS.props.indexOf(k); if (i >= 0) PS.props.splice(i, 1); else PS.props.push(k); b.classList.toggle('on', i < 0); savePS(); };
+    box.appendChild(b);
+  }
 }
 cfg.choppy = $('choppy').checked; $('choppy').onchange = e => { cfg.choppy = e.target.checked; };
 cfg.micExpr = $('micExpr').checked; $('micExpr').onchange = e => { cfg.micExpr = e.target.checked; };
@@ -84,6 +105,15 @@ $('obsCopy').onclick = async () => {
   catch { msg.textContent = '아래 주소를 길게 눌러 복사하세요: ' + url; }
 };
 window.__obsUrl = () => obsUrl();
+window.__extraParams = () => {
+  const o = {}, P = window.__PS || {};
+  if (P.props && P.props.length) o.props = P.props.join(',');
+  if (P.autoBlink === false) o.autoBlink = '0';
+  if (P.breath === false) o.breath = '0';
+  if (P.zoom) o.z = P.zoom;
+  if (P.px || P.py) { o.x = P.px || 0; o.y = P.py || 0; }
+  return o;
+};
 $('preview').onchange = e => document.body.classList.toggle('preview', e.target.checked);
 const setClean = on => document.body.classList.toggle('clean', on);
 $('clean').onclick = () => setClean(true);
@@ -342,6 +372,7 @@ function drawFace(t) {
     window.__ahoge = { f: fa, mood };
   }
   octx.restore();
+  drawProps(octx, S, breath);
   const animT = cfg.choppy ? pose.tick : Math.floor(t / 60);
   if (I.sparkle && ex > 0.85) { const o = Math.round(S / 16); octx.drawImage(I.sparkle, ((Math.floor(t * 8 / 1000) + 1) % 3) * S, 0, S, S, -o, o, S, S); }
   if (I.sparkle && st.sparkle) octx.drawImage(I.sparkle, (Math.floor(animT / 2) % 3) * S, 0, S, S, 0, 0, S, S);
