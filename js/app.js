@@ -8,11 +8,13 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261021-fox65s';
-import { createTail, tailStep } from './tail.js?v=20261021-fox65s';
-import { createEars, earStep } from './ears.js?v=20261021-fox65s';
+import { mic, startMic, micTick } from './mic.js?v=20261021-fox7a';
+import { createTail, tailStep } from './tail.js?v=20261021-fox7a';
+import { createEars, earStep } from './ears.js?v=20261021-fox7a';
 const earSt = createEars(); let earLast = 0;
-const CHARS = { fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
+import { createAhoge, ahogeStep } from './ahoge.js?v=20261021-fox7a';
+const ahoSt = createAhoge(); let ahoLast = 0;
+const CHARS = { fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 let ch = null; // {key, base, m, img, S}
 
 // ---------- 캐릭터 로드 ----------
@@ -298,7 +300,15 @@ function drawFace(t) {
     D(I.ears, tired && I.ears.width > S ? 1 : 0);
     if (!tired) { D(I.earL, fL); D(I.earR, fR); if (I.ahoge) D(I.ahoge, 0); }
     window.__fx.wigDy = fL || fR ? -1 : 0; window.__ears = { fL, fR, pattern: earSt.cur, hist: [...earSt.hist] };
-  } else D(I.ears, tired && I.ears.width > S ? 1 : 0, tired ? 0 : wigDy);
+  } else if (I.ears) D(I.ears, tired && I.ears.width > S ? 1 : 0, tired ? 0 : wigDy);
+  if (ch.m.noEars) {
+    const dt = Math.min(200, t - (ahoLast || t)); ahoLast = t;
+    const mood = window.__forceAhogeMood ?? (tired ? 'tired' : st.expr === 'surprised' ? 'surprised' : st.expr === 'smug' ? 'smug' : (st.expr === 'happy' || exc.hi) ? 'happy' : 'idle');
+    const fa = ahogeStep(ahoSt, dt, ex, mood);
+    if (I.pin) D(I.pin, 0);
+    if (I.ahoge) D(I.ahoge, fa);
+    window.__ahoge = { f: fa, mood };
+  }
   octx.restore();
   const animT = cfg.choppy ? pose.tick : Math.floor(t / 60);
   if (I.sparkle && ex > 0.85) { const o = Math.round(S / 16); octx.drawImage(I.sparkle, ((Math.floor(t * 8 / 1000) + 1) % 3) * S, 0, S, S, -o, o, S, S); }
