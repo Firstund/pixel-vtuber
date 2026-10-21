@@ -8,9 +8,9 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261021-fox65d';
-import { createTail, tailStep } from './tail.js?v=20261021-fox65d';
-import { createEars, earStep } from './ears.js?v=20261021-fox65d';
+import { mic, startMic, micTick } from './mic.js?v=20261021-fox65e';
+import { createTail, tailStep } from './tail.js?v=20261021-fox65e';
+import { createEars, earStep } from './ears.js?v=20261021-fox65e';
 const earSt = createEars(); let earLast = 0;
 const CHARS = { fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 let ch = null; // {key, base, m, img, S}
@@ -296,7 +296,7 @@ function drawFace(t) {
     const dt = Math.min(200, t - (earLast || t)); earLast = t;
     const [fL, fR] = tired ? [0, 0] : earStep(earSt, dt, Math.round(ex * 5) / 5, () => window.__forceEar);
     D(I.ears, tired && I.ears.width > S ? 1 : 0);
-    if (!tired) { D(I.earL, fL); D(I.earR, fR); }
+    if (!tired) { D(I.earL, fL); D(I.earR, fR); if (I.ahoge) D(I.ahoge, 0); }
     window.__fx.wigDy = fL || fR ? -1 : 0; window.__ears = { fL, fR, pattern: earSt.cur, hist: [...earSt.hist] };
   } else D(I.ears, tired && I.ears.width > S ? 1 : 0, tired ? 0 : wigDy);
   octx.restore();

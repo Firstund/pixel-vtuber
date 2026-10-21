@@ -63,9 +63,11 @@
   "ears",
   "sparkle",
   "earL",
-  "earR"
+  "earR",
+  "ahoge"
  ],
  "mouthV2": true,
  "mouthBig": true,
- "earFrames": 10
+ "earFrames": 10,
+ "ahoge": "static ahoge drawn above ear layers (normal); tired uses ears col1"
 }
