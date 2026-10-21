@@ -8,11 +8,11 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261022-f1';
-import { createTail, tailStep } from './tail.js?v=20261022-f1';
-import { createEars, earStep } from './ears.js?v=20261022-f1';
+import { mic, startMic, micTick } from './mic.js?v=20261022-f2';
+import { createTail, tailStep } from './tail.js?v=20261022-f2';
+import { createEars, earStep } from './ears.js?v=20261022-f2';
 const earSt = createEars(); let earLast = 0;
-import { createAhoge, ahogeStep } from './ahoge.js?v=20261022-f1';
+import { createAhoge, ahogeStep } from './ahoge.js?v=20261022-f2';
 const ahoSt = createAhoge(); let ahoLast = 0;
 const CHARS = { fox71: 'assets/fox71/', fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 let ch = null; // {key, base, m, img, S}
@@ -38,6 +38,15 @@ for (const id of ['tMouth', 'tBlink', 'tSmile', 'smooth', 'animFps', 'micSens'])
   const el = $(id), out = el.nextElementSibling;
   const upd = () => { cfg[id] = parseFloat(el.value); out.textContent = el.value; };
   el.addEventListener('input', upd); upd();
+}
+// 사용자 설정 저장 (localStorage)
+const PS = (() => { try { return JSON.parse(localStorage.getItem('pv_settings') || '{}'); } catch { return {}; } })();
+const savePS = () => { try { localStorage.setItem('pv_settings', JSON.stringify(PS)); } catch {} };
+window.__PS = PS; window.__savePS = savePS;
+for (const id of ['autoBlink', 'breath']) {
+  const el = $(id); if (id in PS) el.checked = PS[id];
+  if (params.get(id) === '0') el.checked = false;
+  cfg[id] = el.checked; el.onchange = e => { cfg[id] = e.target.checked; PS[id] = cfg[id]; savePS(); };
 }
 cfg.choppy = $('choppy').checked; $('choppy').onchange = e => { cfg.choppy = e.target.checked; };
 cfg.micExpr = $('micExpr').checked; $('micExpr').onchange = e => { cfg.micExpr = e.target.checked; };
@@ -279,7 +288,7 @@ function drawFull2(t) {
   const wig = ex > 0.25 ? Math.floor(t * (3 + 10 * ex) / 1000) % 2 : 0;
   const wigDy = wig ? -(ex > 0.7 ? 2 : 1) : 0, wigDx = 0;
   const bounce = ex > 0.75 ? -(Math.floor(t * 6 / 1000) % 2) : 0;
-  const breath = Math.floor(t / 1200) % 2;
+  const breath = cfg.breath ? Math.floor(t / 1200) % 2 : 0;
   window.__fx = { ex, wigDy, bounce, e, lv, blink };
   octx.clearRect(0, 0, S, S);
   const [rx, ry] = ch.m.rollPivot || [S / 2, S - 1];
@@ -305,7 +314,7 @@ function drawFace(t) {
   const wig = ex > 0.25 ? Math.floor(t * (3 + 10 * ex) / 1000) % 2 : 0;
   const wigDy = wig ? -(ex > 0.7 ? 2 : 1) : 0;
   const bounce = ex > 0.75 ? -(Math.floor(t * 6 / 1000) % 2) : 0;
-  const breath = Math.floor(t / 1200) % 2, tired = st.expr === 'tired';
+  const breath = cfg.breath ? Math.floor(t / 1200) % 2 : 0, tired = st.expr === 'tired';
   window.__fx = { ex, wigDy, bounce };
   octx.clearRect(0, 0, S, S);
   const [rx, ry] = ch.m.rollPivot || [S / 2, S - 1];
@@ -351,7 +360,7 @@ function draw(t) {
   }
   const S = ch.S, I = ch.img, row = angleRow();
   const animT = cfg.choppy ? pose.tick : Math.floor(t / 60);
-  const breath = Math.floor(t / 1200) % 2;
+  const breath = cfg.breath ? Math.floor(t / 1200) % 2 : 0;
   const L = (c, name, frame, r = row, dx = 0, dy = 0) => { const im = I[name]; if (!im) return; const rr = im.height > S ? r : 0; c.drawImage(im, frame * S, rr * S, S, S, dx, dy, S, S); };
   octx.clearRect(0, 0, S, S);
   const [px, py] = ch.m.neckPivot;
@@ -384,8 +393,15 @@ function draw(t) {
 
 // ---------- 자동 깜빡임 ----------
 let nextBlink = 2000, blinkUntil = 0;
+// 자동 눈 깜빡임: 2~6초 랜덤 간격, 가끔(20%) 두 번 연속. 반환 0 뜸 / 1 반쯤 / 2 감음
 function autoBlink(t) {
-  if (t > nextBlink) { blinkUntil = t + 140; nextBlink = t + 2500 + Math.random() * 3000; }
+  if (!cfg.autoBlink) return 0;
+  if (t > nextBlink) {
+    blinkUntil = t + 140;
+    const dbl = Math.random() < 0.2;
+    window.__blinkCount = (window.__blinkCount || 0) + 1;
+    nextBlink = dbl ? t + 260 : t + 2000 + Math.random() * 4000;
+  }
   return t < blinkUntil ? (t < blinkUntil - 90 || t > blinkUntil - 30 ? 1 : 2) : 0;
 }
 
