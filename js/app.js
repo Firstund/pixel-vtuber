@@ -8,17 +8,17 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261022-f3';
-import { createTail, tailStep } from './tail.js?v=20261022-f3';
-import { createEars, earStep } from './ears.js?v=20261022-f3';
+import { mic, startMic, micTick } from './mic.js?v=20261022-f4';
+import { createTail, tailStep } from './tail.js?v=20261022-f4';
+import { createEars, earStep } from './ears.js?v=20261022-f4';
 const earSt = createEars(); let earLast = 0;
-import { createAhoge, ahogeStep } from './ahoge.js?v=20261022-f3';
+import { createAhoge, ahogeStep } from './ahoge.js?v=20261022-f4';
 const ahoSt = createAhoge(); let ahoLast = 0;
 const CHARS = { fox71: 'assets/fox71/', fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 // ---------- 소품 (모든 캐릭터 공통, 128px 캔버스 기준 위치) ----------
 const PROPS = { coffee: { name: '☕ 커피', x: 76, y: 94, hold: true }, laptop: { name: '💻 노트북', x: 44, y: 98 }, bag: { name: '👜 출근 가방', x: 0, y: 97 }, plant: { name: '🪴 화분', x: 98, y: 96 } };
 const propImg = {};
-for (const k of Object.keys(PROPS)) { const i = new Image(); i.src = 'assets/props/' + k + '.png?v=20261022-f3'; propImg[k] = i; }
+for (const k of Object.keys(PROPS)) { const i = new Image(); i.src = 'assets/props/' + k + '.png?v=20261022-f4'; propImg[k] = i; }
 function drawProps(c, S, breath) {
   const on = window.__PS?.props || [], f = S / 128;
   for (const k of Object.keys(PROPS)) {
@@ -79,9 +79,25 @@ $('micBtn').onclick = async () => {
 cfg.mirror = $('mirror').checked; $('mirror').onchange = e => { cfg.mirror = e.target.checked; };
 if (params.get('mirror') === '0') { $('mirror').checked = false; cfg.mirror = false; }
 if (params.get('choppy') === '0') { $('choppy').checked = false; cfg.choppy = false; }
-const setBg = c => { document.body.style.background = c; $('bg').value = c; };
+const setBg = c => { document.body.style.backgroundColor = c; $('bg').value = c; };
 $('bg').addEventListener('input', e => setBg(e.target.value));
 $('green').onclick = () => setBg('#00ff00');
+// ---------- 배경 이미지 (IndexedDB에 저장, 새로고침해도 유지) ----------
+const bgDB = () => new Promise((res, rej) => { const r = indexedDB.open('pv_bg', 1); r.onupgradeneeded = () => r.result.createObjectStore('img'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const bgGet = async () => { const db = await bgDB(); return new Promise(res => { const q = db.transaction('img').objectStore('img').get('bg'); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); }); };
+const bgPut = async v => { const db = await bgDB(); return new Promise(res => { const tx = db.transaction('img', 'readwrite'); v ? tx.objectStore('img').put(v, 'bg') : tx.objectStore('img').delete('bg'); tx.oncomplete = res; tx.onerror = res; }); };
+let bgUrl = null;
+window.__bgApply = () => {
+  const b = document.body.style;
+  if (bgUrl) { b.backgroundImage = `url(${bgUrl})`; b.backgroundSize = PS.bgFit || 'cover'; b.backgroundPosition = 'center'; b.backgroundRepeat = 'no-repeat'; }
+  else b.backgroundImage = 'none';
+  window.__bgState = { has: !!bgUrl, fit: PS.bgFit || 'cover' };
+};
+$('bgFit').value = PS.bgFit || 'cover';
+$('bgFit').onchange = e => { PS.bgFit = e.target.value; savePS(); window.__bgApply(); };
+$('bgFile').onchange = async e => { const f = e.target.files[0]; if (!f) return; await bgPut(f); if (bgUrl) URL.revokeObjectURL(bgUrl); bgUrl = URL.createObjectURL(f); window.__bgApply(); };
+$('bgDel').onclick = async () => { await bgPut(null); if (bgUrl) URL.revokeObjectURL(bgUrl); bgUrl = null; $('bgFile').value = ''; window.__bgApply(); };
+bgGet().then(f => { if (f) bgUrl = URL.createObjectURL(f); window.__bgApply(); }).catch(() => {});
 // ---------- 투명 배경 / OBS 모드 ----------
 const setTransp = on => { document.body.classList.toggle('transp', on); document.documentElement.classList.toggle('transp', on); $('transp').checked = on; if (window.__bgApply) window.__bgApply(); };
 $('transp').onchange = e => setTransp(e.target.checked);
