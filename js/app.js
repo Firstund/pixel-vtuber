@@ -8,17 +8,17 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261022-f4';
-import { createTail, tailStep } from './tail.js?v=20261022-f4';
-import { createEars, earStep } from './ears.js?v=20261022-f4';
+import { mic, startMic, micTick } from './mic.js?v=20261022-f5';
+import { createTail, tailStep } from './tail.js?v=20261022-f5';
+import { createEars, earStep } from './ears.js?v=20261022-f5';
 const earSt = createEars(); let earLast = 0;
-import { createAhoge, ahogeStep } from './ahoge.js?v=20261022-f4';
+import { createAhoge, ahogeStep } from './ahoge.js?v=20261022-f5';
 const ahoSt = createAhoge(); let ahoLast = 0;
 const CHARS = { fox71: 'assets/fox71/', fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 // ---------- 소품 (모든 캐릭터 공통, 128px 캔버스 기준 위치) ----------
 const PROPS = { coffee: { name: '☕ 커피', x: 76, y: 94, hold: true }, laptop: { name: '💻 노트북', x: 44, y: 98 }, bag: { name: '👜 출근 가방', x: 0, y: 97 }, plant: { name: '🪴 화분', x: 98, y: 96 } };
 const propImg = {};
-for (const k of Object.keys(PROPS)) { const i = new Image(); i.src = 'assets/props/' + k + '.png?v=20261022-f4'; propImg[k] = i; }
+for (const k of Object.keys(PROPS)) { const i = new Image(); i.src = 'assets/props/' + k + '.png?v=20261022-f5'; propImg[k] = i; }
 function drawProps(c, S, breath) {
   const on = window.__PS?.props || [], f = S / 128;
   for (const k of Object.keys(PROPS)) {
@@ -68,6 +68,18 @@ for (const id of ['autoBlink', 'breath']) {
     b.onclick = () => { const i = PS.props.indexOf(k); if (i >= 0) PS.props.splice(i, 1); else PS.props.push(k); b.classList.toggle('on', i < 0); savePS(); };
     box.appendChild(b);
   }
+}
+{ // 위치·크기 (드래그 + 슬라이더). 크기 = 캐릭터 1픽셀당 화면 크기(정수 단계, 흐림 없음)
+  for (const [k, q] of [['zoom', 'z'], ['px', 'x'], ['py', 'y']]) if (params.get(q) !== null && !isNaN(+params.get(q))) PS[k] = Math.round(+params.get(q));
+  const zl = () => { $('zoom').value = PS.zoom || 0; $('zoomOut').textContent = PS.zoom ? '×' + PS.zoom : '자동'; };
+  zl();
+  $('zoom').oninput = e => { PS.zoom = +e.target.value || 0; zl(); savePS(); resize(); };
+  $('posReset').onclick = () => { PS.zoom = 0; PS.px = 0; PS.py = 0; zl(); savePS(); resize(); };
+  let drag = null;
+  canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, px: PS.px || 0, py: PS.py || 0 }; canvas.setPointerCapture(e.pointerId); canvas.classList.add('drag'); });
+  canvas.addEventListener('pointermove', e => { if (!drag) return; PS.px = Math.round(drag.px + e.clientX - drag.x); PS.py = Math.round(drag.py + e.clientY - drag.y); canvas.style.transform = `translate(${PS.px}px, ${PS.py}px)`; });
+  const end = () => { if (drag) { drag = null; canvas.classList.remove('drag'); savePS(); } };
+  canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
 }
 cfg.choppy = $('choppy').checked; $('choppy').onchange = e => { cfg.choppy = e.target.checked; };
 cfg.micExpr = $('micExpr').checked; $('micExpr').onchange = e => { cfg.micExpr = e.target.checked; };
@@ -154,7 +166,9 @@ let scale = 4;
 function resize() {
   if (!ch) return;
   const r = $('stage').getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
-  scale = Math.max(1, Math.floor(Math.min(r.width, r.height) * dpr / ch.S));
+  const P = window.__PS || {};
+  scale = P.zoom ? Math.max(1, Math.round(P.zoom * dpr)) : Math.max(1, Math.floor(Math.min(r.width, r.height) * dpr / ch.S));
+  canvas.style.transform = `translate(${P.px || 0}px, ${P.py || 0}px)`;
   canvas.width = canvas.height = ch.S * scale;
   canvas.style.width = canvas.style.height = (ch.S * scale / dpr) + 'px';
   ctx.imageSmoothingEnabled = false;

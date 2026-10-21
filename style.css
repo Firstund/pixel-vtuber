@@ -19,3 +19,5 @@ select{font-size:14px;padding:4px;border-radius:6px}
 
 html.transp,body.transp{background:transparent!important}
 body.obs #panel,body.obs #hud,body.obs #video{display:none!important}
+
+#c{touch-action:none;cursor:grab;position:relative}#c.drag{cursor:grabbing}
