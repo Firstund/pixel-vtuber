@@ -8,11 +8,11 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261021-fox71a';
-import { createTail, tailStep } from './tail.js?v=20261021-fox71a';
-import { createEars, earStep } from './ears.js?v=20261021-fox71a';
+import { mic, startMic, micTick } from './mic.js?v=20261022-f1';
+import { createTail, tailStep } from './tail.js?v=20261022-f1';
+import { createEars, earStep } from './ears.js?v=20261022-f1';
 const earSt = createEars(); let earLast = 0;
-import { createAhoge, ahogeStep } from './ahoge.js?v=20261021-fox71a';
+import { createAhoge, ahogeStep } from './ahoge.js?v=20261022-f1';
 const ahoSt = createAhoge(); let ahoLast = 0;
 const CHARS = { fox71: 'assets/fox71/', fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 let ch = null; // {key, base, m, img, S}
@@ -52,18 +52,41 @@ if (params.get('choppy') === '0') { $('choppy').checked = false; cfg.choppy = fa
 const setBg = c => { document.body.style.background = c; $('bg').value = c; };
 $('bg').addEventListener('input', e => setBg(e.target.value));
 $('green').onclick = () => setBg('#00ff00');
-if (params.get('bg')) setBg('#' + params.get('bg').replace('#', ''));
+// ---------- 투명 배경 / OBS 모드 ----------
+const setTransp = on => { document.body.classList.toggle('transp', on); document.documentElement.classList.toggle('transp', on); $('transp').checked = on; if (window.__bgApply) window.__bgApply(); };
+$('transp').onchange = e => setTransp(e.target.checked);
+const setObs = on => { document.body.classList.toggle('obs', on); if (on) setTransp(true); };
+$('obsMode').onclick = () => setObs(true);
+const bgParam = params.get('bg');
+if (bgParam === 'transparent') setTransp(true);
+else if (bgParam) setBg('#' + bgParam.replace('#', ''));
+if (params.get('obs') === '1') setObs(true);
+function obsUrl() {
+  const u = new URL(location.origin + location.pathname);
+  u.searchParams.set('char', ch.key); u.searchParams.set('obs', '1');
+  if (!cfg.mirror) u.searchParams.set('mirror', '0');
+  if (!cfg.choppy) u.searchParams.set('choppy', '0');
+  if (window.__extraParams) for (const [k, v] of Object.entries(window.__extraParams())) u.searchParams.set(k, v);
+  return u.toString();
+}
+$('obsCopy').onclick = async () => {
+  const url = obsUrl(), msg = $('obsMsg'); msg.hidden = false;
+  try { await navigator.clipboard.writeText(url); msg.textContent = '복사됨! OBS > 소스 추가 > 브라우저 에 붙여넣기: ' + url; }
+  catch { msg.textContent = '아래 주소를 길게 눌러 복사하세요: ' + url; }
+};
+window.__obsUrl = () => obsUrl();
 $('preview').onchange = e => document.body.classList.toggle('preview', e.target.checked);
 const setClean = on => document.body.classList.toggle('clean', on);
 $('clean').onclick = () => setClean(true);
 if (params.get('clean') === '1') setClean(true);
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' || e.key === 'h') setClean(!document.body.classList.contains('clean') && e.key === 'h');
+  if (e.key === 'Escape') document.body.classList.remove('obs');
   const k = { '1': 'auto', '2': 'happy', '3': 'tired', '4': 'surprised', '5': 'smug' }[e.key]; if (k) setExpr(k);
 });
 let lastTap = 0;
 $('stage').addEventListener('pointerup', () => { const t = performance.now(); if (t - lastTap < 350) setClean(false); lastTap = t; });
-document.addEventListener('dblclick', () => setClean(false));
+document.addEventListener('dblclick', () => { setClean(false); document.body.classList.remove('obs'); });
 const status = s => { $('status').textContent = s; };
 const showErr = s => { const e = $('err'); e.hidden = !s; e.textContent = s || ''; };
 let exprOverride = 'auto';
