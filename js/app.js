@@ -8,11 +8,11 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261023-v92b';
-import { createTail, tailStep } from './tail.js?v=20261023-v92b';
-import { createEars, earStep } from './ears.js?v=20261023-v92b';
+import { mic, startMic, micTick } from './mic.js?v=20261023-v92c';
+import { createTail, tailStep } from './tail.js?v=20261023-v92c';
+import { createEars, earStep } from './ears.js?v=20261023-v92c';
 const earSt = createEars(); let earLast = 0;
-import { createAhoge, ahogeStep } from './ahoge.js?v=20261023-v92b';
+import { createAhoge, ahogeStep } from './ahoge.js?v=20261023-v92c';
 const ahoSt = createAhoge(); let ahoLast = 0;
 // v8.5: frame-doubled sheets. sparkle frame count from sheet width; ahoge in-between frame shown briefly on state change (manifest ahogeTween).
 function spN(S) { return (ch.img.sparkle ? (ch.img.sparkle.width / S) | 0 : 3) || 3; }
@@ -45,7 +45,7 @@ const CHARS = { fox92: 'assets/fox92/', fox91: 'assets/fox91/', fox9: 'assets/fo
 // ---------- 소품 (모든 캐릭터 공통, 128px 캔버스 기준 위치) ----------
 const PROPS = { coffee: { name: '☕ 커피', x: 76, y: 94, hold: true }, laptop: { name: '💻 노트북', x: 44, y: 98 }, bag: { name: '👜 출근 가방', x: 0, y: 97 }, plant: { name: '🪴 화분', x: 98, y: 96 } };
 const propImg = {};
-for (const k of Object.keys(PROPS)) { const i = new Image(); i.src = 'assets/props/' + k + '.png?v=20261023-v92b'; propImg[k] = i; }
+for (const k of Object.keys(PROPS)) { const i = new Image(); i.src = 'assets/props/' + k + '.png?v=20261023-v92c'; propImg[k] = i; }
 function drawProps(c, S, breath) {
   const on = window.__PS?.props || [], f = S / 128;
   for (const k of Object.keys(PROPS)) {
@@ -206,7 +206,7 @@ function resize() {
 new ResizeObserver(resize).observe($('stage'));
 
 // ---------- 스무딩 / 히스테리시스 ----------
-const sm = { stretch: 0, asym: 0, puff: 0, squint: 0, jaw: 0, funnel: 0, smile: 0, blink: 0, brow: 0, wide: 0, yaw: 0, pitch: 0, roll: 0 };
+const sm = { blinkL: 0, blinkR: 0, stretch: 0, asym: 0, puff: 0, squint: 0, jaw: 0, funnel: 0, smile: 0, blink: 0, brow: 0, wide: 0, yaw: 0, pitch: 0, roll: 0 };
 function smooth(key, v, k = cfg.smooth) { sm[key] = sm[key] * k + v * (1 - k); return sm[key]; }
 // 오름차순 경계값 ths, 현재 레벨 cur 기준 ±h 여유(데드존)를 둔 레벨
 function level(v, cur, ths, h) {
@@ -222,6 +222,7 @@ const HOLD_MS = 100;  // 한 단계에 최소 머무는 시간
 const pose = { yawL: 2, pitL: 1, rollL: 1, k: 0, p: 0, r: 0, shown: { k: 0, p: 0, r: 0 }, changedAt: { k: 0, p: 0, r: 0 }, lastTick: 0, tick: 0 };
 const st = { eye: 0, mouth: 0, brow: 0, ears: 0, sparkle: false, expr: 'auto' };
 let mouthLv = 0, eyeLv = 0;
+const eyeSide = { L: 0, R: 0 };
 const exc = { since: 0, calmSince: 0, hi: false };
 
 // v6.2: 큰 입 — 벌림 5단계 + 모양(오/이/웃음/한쪽웃음/볼부풀림), 히스테리시스로 계단식 전환
@@ -285,6 +286,14 @@ function decide(b, auto, t) {
   else mouth = smi > cfg.tSmile + (st.mouth === 3 ? -H : H) ? 3 : 0;
   // --- 눈
   eyeLv = level(blink, eyeLv, [cfg.tBlink * 0.6, cfg.tBlink], H);
+  // v9.2c: 좌우 독립 깜빡임 (manifest.eyeSplit) — 추적 중일 때만, 자동 깜빡임은 양쪽 동시
+  const split = ch.m.eyeSplit && !auto && b.blinkL != null;
+  if (split) {
+    const bl = smooth('blinkL', b.blinkL, Math.min(cfg.smooth, 0.3)), br = smooth('blinkR', b.blinkR, Math.min(cfg.smooth, 0.3));
+    const ths = [cfg.tBlink * 0.6, cfg.tBlink];
+    eyeSide.L = level(bl, eyeSide.L, ths, H); eyeSide.R = level(br, eyeSide.R, ths, H);
+    eyeLv = Math.min(eyeSide.L, eyeSide.R);
+  } else eyeSide.L = eyeSide.R = 0;
   if (auto) eyeLv = auto;
   let eye = [0, 1, 2][eyeLv], browF = brow > (st.brow ? 0.3 : 0.4) ? 1 : 0, ears = 0, sparkle = false;
   // --- 표정 (자동 판정 + 수동 고정)
@@ -310,6 +319,9 @@ function decide(b, auto, t) {
   if (browF >= nb) browF = browF === 3 ? 1 : 0;
   let blush = false;
   if (ch.m.mouthV2) ({ eye, mouth, browF, blush } = decideV2(b, jaw, fun, smi, ex, eye, browF));
+  // 화면 기준 왼쪽/오른쪽 눈 프레임. 거울 모드: 사용자 왼눈(eyeBlinkLeft) → 화면 왼쪽
+  const sL = cfg.mirror ? eyeSide.L : eyeSide.R, sR = cfg.mirror ? eyeSide.R : eyeSide.L;
+  st.eyeL = split && sL > eyeLv ? sL : null; st.eyeR = split && sR > eyeLv ? sR : null;
   Object.assign(st, { eye, mouth, brow: browF, ears, sparkle, expr: ex, blush: blush || (ex === 'happy') || exc.hi });
   // --- 머리 각도: 양자화 + 히스테리시스 (데드존)
   pose.yawL = level(yaw, pose.yawL, YAW_TH, YAW_H);
@@ -422,7 +434,14 @@ function drawFace(t) {
   if (I.ears9) { const fe = window.__forceEar9 ?? earTwitchFrame(t); D(I.ears9, fe); window.__ears9 = fe; }
   D(I.base, 0);
   const edy = ch.m.mouthBig && st.mouthLv >= 4 ? -1 : 0;
-  D(I.eyes, st.eye, edy); D(I.mouth, st.mouth); D(I.brows, st.brow, edy);
+  if (ch.m.eyeSplit && (st.eyeL != null || st.eyeR != null)) {
+    const sx = ch.m.eyeSplitX[row];
+    for (const [x0, w, f] of [[0, sx, st.eyeL ?? st.eye], [sx, S - sx, st.eyeR ?? st.eye]]) {
+      octx.save(); octx.beginPath(); octx.rect(x0, -S, w, 3 * S); octx.clip(); D(I.eyes, f, edy); octx.restore();
+    }
+  } else D(I.eyes, st.eye, edy);
+  window.__eyes = { L: st.eyeL ?? st.eye, R: st.eyeR ?? st.eye };
+  D(I.mouth, st.mouth); D(I.brows, st.brow, edy);
   if (I.blush && st.blush) D(I.blush, 0);
   if (I.earL) {
     const dt = Math.min(200, t - (earLast || t)); earLast = t;
@@ -526,6 +545,7 @@ function readResult(r) {
     jaw: m.jawOpen || 0, funnel: Math.max(m.mouthFunnel || 0, m.mouthPucker || 0),
     smile: ((m.mouthSmileLeft || 0) + (m.mouthSmileRight || 0)) / 2,
     blink: Math.max(m.eyeBlinkLeft || 0, m.eyeBlinkRight || 0) * 0.5 + ((m.eyeBlinkLeft || 0) + (m.eyeBlinkRight || 0)) / 4,
+    blinkL: m.eyeBlinkLeft || 0, blinkR: m.eyeBlinkRight || 0,
     brow: m.browInnerUp || 0, wide: ((m.eyeWideLeft || 0) + (m.eyeWideRight || 0)) / 2, yaw: 0, pitch: 0, roll: 0,
     stretch: ((m.mouthStretchLeft || 0) + (m.mouthStretchRight || 0)) / 2, smileAsym: (m.mouthSmileLeft || 0) - (m.mouthSmileRight || 0),
     puff: m.cheekPuff || 0, squint: ((m.eyeSquintLeft || 0) + (m.eyeSquintRight || 0)) / 2,
