@@ -46,12 +46,7 @@
   "op03",
   "op04",
   "op05",
-  "op06",
-  "op07",
-  "op08",
-  "op09",
-  "op10",
-  "op11"
+  "op06"
  ],
  "brows": [
   "neutral",
@@ -81,7 +76,7 @@
  "ahoge": "animated ahoge: 0 rest,1 sway L,2 sway R,3 bounce up,4 squash,5 droop,6 droop more; pin = fox hairpin per angle",
  "noEars": true,
  "ahogeFrames": 14,
- "note": "v8.1: side-view big mouth scaled (yaw±1 0.8x, ±2 0.65x); tight masks + palette snap + edge blend to remove box seams; natural tail-root fill. | v8.2: tail root segment behind hair/shoulder in all 24 tail frames (no gaps at any of 15 angles), hair-coloured back fill removed, floating outline fragments under chin removed. | v8.3: tail recoloured to orange only (no white/cream tip or highlights). | v8.4: tail simplified to one smooth plump silhouette (flat orange + one shadow, outline only, no inner strokes). | v8.5: frames doubled (tail 24->48 in-betweens, ahoge 7 states + 7 in-between frames shown 70ms on state change, sparkle 3->6); same timing. | v9: procedural pixel fox ears (orange base+shadow, dark-brown inner, outline) per angle with perspective, drawn behind hair; slow occasional twitch. | v9.1: ahoge poses at 65% amplitude, 1.25x slower, in-betweens regenerated; removed stray 2px root outline line from ahoge frames. | v9.2: mouth open subdivided into 11 levels op01(=o1)..op11(=o4), generated per angle by squashing o4 (row/col deletion, no blending); app maps jaw to these with hysteresis.",
+ "note": "v8.1: side-view big mouth scaled (yaw±1 0.8x, ±2 0.65x); tight masks + palette snap + edge blend to remove box seams; natural tail-root fill. | v8.2: tail root segment behind hair/shoulder in all 24 tail frames (no gaps at any of 15 angles), hair-coloured back fill removed, floating outline fragments under chin removed. | v8.3: tail recoloured to orange only (no white/cream tip or highlights). | v8.4: tail simplified to one smooth plump silhouette (flat orange + one shadow, outline only, no inner strokes). | v8.5: frames doubled (tail 24->48 in-betweens, ahoge 7 states + 7 in-between frames shown 70ms on state change, sparkle 3->6); same timing. | v9: procedural pixel fox ears (orange base+shadow, dark-brown inner, outline) per angle with perspective, drawn behind hair; slow occasional twitch. | v9.1: ahoge poses at 65% amplitude, 1.25x slower, in-betweens regenerated; removed stray 2px root outline line from ahoge frames. | v9.2b: mouth open in 6 levels op01..op06 (op06 = o4 exactly); all levels are shrunk o4 (row/col deletion, no blending) over an o1-skin cover, evenly spaced by visible opening area, strictly increasing height at every angle; app maps jaw evenly with hysteresis.",
  "tailBreath": true,
  "ahogeTween": {
   "0-1": 7,
@@ -103,11 +98,6 @@
   "op03",
   "op04",
   "op05",
-  "op06",
-  "op07",
-  "op08",
-  "op09",
-  "op10",
-  "op11"
+  "op06"
  ]
 }
