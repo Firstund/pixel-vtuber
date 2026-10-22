@@ -8,11 +8,11 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261023-v9';
-import { createTail, tailStep } from './tail.js?v=20261023-v9';
-import { createEars, earStep } from './ears.js?v=20261023-v9';
+import { mic, startMic, micTick } from './mic.js?v=20261023-v91';
+import { createTail, tailStep } from './tail.js?v=20261023-v91';
+import { createEars, earStep } from './ears.js?v=20261023-v91';
 const earSt = createEars(); let earLast = 0;
-import { createAhoge, ahogeStep } from './ahoge.js?v=20261023-v9';
+import { createAhoge, ahogeStep } from './ahoge.js?v=20261023-v91';
 const ahoSt = createAhoge(); let ahoLast = 0;
 // v8.5: frame-doubled sheets. sparkle frame count from sheet width; ahoge in-between frame shown briefly on state change (manifest ahogeTween).
 function spN(S) { return (ch.img.sparkle ? (ch.img.sparkle.width / S) | 0 : 3) || 3; }
@@ -41,11 +41,11 @@ function ahogeTweenFrame(fa, t) {
   ahoTw.prev = fa;
   return t < ahoTw.until ? ahoTw.f : fa;
 }
-const CHARS = { fox9: 'assets/fox9/', fox85: 'assets/fox85/', fox84: 'assets/fox84/', fox83: 'assets/fox83/', fox82: 'assets/fox82/', fox81: 'assets/fox81/', fox8: 'assets/fox8/', fox71: 'assets/fox71/', fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
+const CHARS = { fox91: 'assets/fox91/', fox9: 'assets/fox9/', fox85: 'assets/fox85/', fox84: 'assets/fox84/', fox83: 'assets/fox83/', fox82: 'assets/fox82/', fox81: 'assets/fox81/', fox8: 'assets/fox8/', fox71: 'assets/fox71/', fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 // ---------- 소품 (모든 캐릭터 공통, 128px 캔버스 기준 위치) ----------
 const PROPS = { coffee: { name: '☕ 커피', x: 76, y: 94, hold: true }, laptop: { name: '💻 노트북', x: 44, y: 98 }, bag: { name: '👜 출근 가방', x: 0, y: 97 }, plant: { name: '🪴 화분', x: 98, y: 96 } };
 const propImg = {};
-for (const k of Object.keys(PROPS)) { const i = new Image(); i.src = 'assets/props/' + k + '.png?v=20261023-v9'; propImg[k] = i; }
+for (const k of Object.keys(PROPS)) { const i = new Image(); i.src = 'assets/props/' + k + '.png?v=20261023-v91'; propImg[k] = i; }
 function drawProps(c, S, breath) {
   const on = window.__PS?.props || [], f = S / 128;
   for (const k of Object.keys(PROPS)) {
@@ -427,7 +427,7 @@ function drawFace(t) {
   if (ch.m.noEars) {
     const dt = Math.min(200, t - (ahoLast || t)); ahoLast = t;
     const mood = window.__forceAhogeMood ?? (tired ? 'tired' : st.expr === 'surprised' ? 'surprised' : st.expr === 'smug' ? 'smug' : (st.expr === 'happy' || exc.hi) ? 'happy' : 'idle');
-    const fa = ahogeStep(ahoSt, dt, ex, mood);
+    const fa = ahogeStep(ahoSt, dt / (ch.m.ahogeSlow || 1), ex, mood);
     if (I.pin) D(I.pin, 0);
     const fd = ahogeTweenFrame(fa, t);
     if (I.ahoge) D(I.ahoge, fd);
