@@ -8,11 +8,11 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261023-dl';
-import { createTail, tailStep } from './tail.js?v=20261023-dl';
-import { createEars, earStep } from './ears.js?v=20261023-dl';
+import { mic, startMic, micTick } from './mic.js?v=20261023-v92';
+import { createTail, tailStep } from './tail.js?v=20261023-v92';
+import { createEars, earStep } from './ears.js?v=20261023-v92';
 const earSt = createEars(); let earLast = 0;
-import { createAhoge, ahogeStep } from './ahoge.js?v=20261023-dl';
+import { createAhoge, ahogeStep } from './ahoge.js?v=20261023-v92';
 const ahoSt = createAhoge(); let ahoLast = 0;
 // v8.5: frame-doubled sheets. sparkle frame count from sheet width; ahoge in-between frame shown briefly on state change (manifest ahogeTween).
 function spN(S) { return (ch.img.sparkle ? (ch.img.sparkle.width / S) | 0 : 3) || 3; }
@@ -41,11 +41,11 @@ function ahogeTweenFrame(fa, t) {
   ahoTw.prev = fa;
   return t < ahoTw.until ? ahoTw.f : fa;
 }
-const CHARS = { fox91: 'assets/fox91/', fox9: 'assets/fox9/', fox85: 'assets/fox85/', fox84: 'assets/fox84/', fox83: 'assets/fox83/', fox82: 'assets/fox82/', fox81: 'assets/fox81/', fox8: 'assets/fox8/', fox71: 'assets/fox71/', fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
+const CHARS = { fox92: 'assets/fox92/', fox91: 'assets/fox91/', fox9: 'assets/fox9/', fox85: 'assets/fox85/', fox84: 'assets/fox84/', fox83: 'assets/fox83/', fox82: 'assets/fox82/', fox81: 'assets/fox81/', fox8: 'assets/fox8/', fox71: 'assets/fox71/', fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 // ---------- 소품 (모든 캐릭터 공통, 128px 캔버스 기준 위치) ----------
 const PROPS = { coffee: { name: '☕ 커피', x: 76, y: 94, hold: true }, laptop: { name: '💻 노트북', x: 44, y: 98 }, bag: { name: '👜 출근 가방', x: 0, y: 97 }, plant: { name: '🪴 화분', x: 98, y: 96 } };
 const propImg = {};
-for (const k of Object.keys(PROPS)) { const i = new Image(); i.src = 'assets/props/' + k + '.png?v=20261023-dl'; propImg[k] = i; }
+for (const k of Object.keys(PROPS)) { const i = new Image(); i.src = 'assets/props/' + k + '.png?v=20261023-v92'; propImg[k] = i; }
 function drawProps(c, S, breath) {
   const on = window.__PS?.props || [], f = S / 128;
   for (const k of Object.keys(PROPS)) {
@@ -225,7 +225,7 @@ let mouthLv = 0, eyeLv = 0;
 const exc = { since: 0, calmSince: 0, hi: false };
 
 // v6.2: 큰 입 — 벌림 5단계 + 모양(오/이/웃음/한쪽웃음/볼부풀림), 히스테리시스로 계단식 전환
-const MV = { lv: 0, shape: 'n', since: 0 };
+const MV = { lv: 0, fine: 0, shape: 'n', since: 0 };
 const MI = n => ch.m.mouth.indexOf(n);
 const MSETS = { // 표정별 [닫힘, 작게, 중간, 크게, 아주 크게]
   auto: ['cat', 'o1', 'o2', 'o3', 'o4'], happy: ['smile_c', 'smile_m', 'smile_m', 'smile_b', 'smile_b'],
@@ -234,6 +234,13 @@ const MSETS = { // 표정별 [닫힘, 작게, 중간, 크게, 아주 크게]
 function decideV2(b, jaw, fun, smi, ex, eye, browF) {
   const H = 0.04, t0 = cfg.tMouth;
   MV.lv = level(jaw, MV.lv, [t0 * 0.7, t0 * 1.5, t0 * 2.4, t0 * 3.4], H);
+  // v9.2: 세밀한 벌림 단계 (manifest.mouthOpenLevels) — 연속 jaw 값 → op01..opNN, 단계 간격의 35% 히스테리시스
+  const OL = ch.m.mouthOpenLevels;
+  if (OL && OL.length) {
+    const n = OL.length, lo = t0 * 0.7, hi = t0 * 3.4, step = (hi - lo) / Math.max(1, n - 1);
+    const ths = Array.from({ length: n }, (_, i) => lo + step * i);
+    MV.fine = level(jaw, Math.min(MV.fine, n), ths, Math.min(H, step * 0.35));
+  }
   const str = smooth('stretch', b.stretch || 0), asym = smooth('asym', b.smileAsym || 0), puff = smooth('puff', b.puff || 0), sq = smooth('squint', b.squint || 0);
   const hyst = (cur, name, v, th) => v > th + (cur === name ? -0.06 : 0.06);
   let shape = 'n';
@@ -250,7 +257,7 @@ function decideV2(b, jaw, fun, smi, ex, eye, browF) {
     else if (shape === 'smile') { name = lv === 0 ? 'smile_c' : lv >= 3 ? 'smile_b' : 'smile_m'; blush = lv >= 3; }
     else if (shape === 'asym') name = lv === 0 ? 'smirk' : 'grin';
     else if (shape === 'ee') name = 'ee';
-    else name = MSETS.auto[lv];
+    else name = (OL && OL.length) ? (MV.fine ? OL[MV.fine - 1] : 'cat') : MSETS.auto[lv];
   } else name = (MSETS[ex] || MSETS.auto)[lv];
   // 눈을 입에 맞춰 미세 조정
   if (eye < 2) {
@@ -262,7 +269,7 @@ function decideV2(b, jaw, fun, smi, ex, eye, browF) {
   if (ex === 'happy' && lv >= 3) blush = true;
   const mouth = Math.max(0, MI(name));
   st.mouthLv = lv;
-  window.__mv = { lv, shape, name, eye, blush };
+  window.__mv = { lv, fine: MV.fine, shape, name, eye, blush };
   return { eye, mouth, browF, blush };
 }
 function decide(b, auto, t) {
