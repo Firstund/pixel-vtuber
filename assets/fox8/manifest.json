@@ -69,5 +69,5 @@
  "ahoge": "animated ahoge: 0 rest,1 sway L,2 sway R,3 bounce up,4 squash,5 droop,6 droop more; pin = fox hairpin per angle",
  "noEars": true,
  "ahogeFrames": 7,
- "note": "V8: 256px PixelLab master (generate-image-v2) + yaw heads; yaw±2/pitch±1 = shifted heads; expressions via edit-images-v2; brows hidden under bangs (empty layer)"
+ "note": "V8.1: 15 heads (9 PixelLab generate-image-v2 heads + 6 mirrored for yaw>0), palette-snapped to master, master ahoge/pin repositioned per angle; eyes+mouth via edit-images-v2 per head; big cartoon mouth = master sprite placed per head (exceeds face outline); brows layer empty (expressive eye frames)"
 }
