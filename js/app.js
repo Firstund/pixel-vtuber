@@ -8,11 +8,11 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261023-v91c';
-import { createTail, tailStep } from './tail.js?v=20261023-v91c';
-import { createEars, earStep } from './ears.js?v=20261023-v91c';
+import { mic, startMic, micTick } from './mic.js?v=20261023-dl';
+import { createTail, tailStep } from './tail.js?v=20261023-dl';
+import { createEars, earStep } from './ears.js?v=20261023-dl';
 const earSt = createEars(); let earLast = 0;
-import { createAhoge, ahogeStep } from './ahoge.js?v=20261023-v91c';
+import { createAhoge, ahogeStep } from './ahoge.js?v=20261023-dl';
 const ahoSt = createAhoge(); let ahoLast = 0;
 // v8.5: frame-doubled sheets. sparkle frame count from sheet width; ahoge in-between frame shown briefly on state change (manifest ahogeTween).
 function spN(S) { return (ch.img.sparkle ? (ch.img.sparkle.width / S) | 0 : 3) || 3; }
@@ -45,7 +45,7 @@ const CHARS = { fox91: 'assets/fox91/', fox9: 'assets/fox9/', fox85: 'assets/fox
 // ---------- 소품 (모든 캐릭터 공통, 128px 캔버스 기준 위치) ----------
 const PROPS = { coffee: { name: '☕ 커피', x: 76, y: 94, hold: true }, laptop: { name: '💻 노트북', x: 44, y: 98 }, bag: { name: '👜 출근 가방', x: 0, y: 97 }, plant: { name: '🪴 화분', x: 98, y: 96 } };
 const propImg = {};
-for (const k of Object.keys(PROPS)) { const i = new Image(); i.src = 'assets/props/' + k + '.png?v=20261023-v91c'; propImg[k] = i; }
+for (const k of Object.keys(PROPS)) { const i = new Image(); i.src = 'assets/props/' + k + '.png?v=20261023-dl'; propImg[k] = i; }
 function drawProps(c, S, breath) {
   const on = window.__PS?.props || [], f = S / 128;
   for (const k of Object.keys(PROPS)) {
@@ -601,3 +601,50 @@ requestAnimationFrame(loop);
 // 테스트용: 가짜 MediaPipe 결과를 실제 readResult 경로로 주입
 function simResult(r) { mode = 'sim'; latest = readResult(r); }
 window.__app = { mic, exc, st, pose, cfg, startCamera, loadModel, loadChar, setExpr, simResult };
+
+// ---------- 스프라이트 시트 다운로드 (store-only zip, no deps) ----------
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC_T[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function makeZip(files) { // files: [{name, data:Uint8Array}]
+  const enc = new TextEncoder(), parts = [], cen = []; let off = 0;
+  const d = new Date(), dt = ((d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1)), dd = (((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate());
+  for (const f of files) {
+    const nm = enc.encode(f.name), crc = crc32(f.data), sz = f.data.length;
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+    h.setUint16(10, dt, true); h.setUint16(12, dd, true); h.setUint32(14, crc, true); h.setUint32(18, sz, true); h.setUint32(22, sz, true);
+    h.setUint16(26, nm.length, true); h.setUint16(28, 0, true);
+    parts.push(new Uint8Array(h.buffer), nm, f.data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true);
+    c.setUint16(12, dt, true); c.setUint16(14, dd, true); c.setUint32(16, crc, true); c.setUint32(20, sz, true); c.setUint32(24, sz, true);
+    c.setUint16(28, nm.length, true); c.setUint32(42, off, true);
+    cen.push(new Uint8Array(c.buffer), nm);
+    off += 30 + nm.length + sz;
+  }
+  const cenSize = cen.reduce((a, b) => a + b.length, 0), e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cenSize, true); e.setUint32(16, off, true);
+  return new Blob([...parts, ...cen, new Uint8Array(e.buffer)], { type: 'application/zip' });
+}
+async function spriteZip() {
+  const c = ch, files = [];
+  const get = async p => { const r = await fetch(c.base + p, { cache: 'no-cache' }); if (!r.ok) throw new Error(p + ' ' + r.status); return new Uint8Array(await r.arrayBuffer()); };
+  files.push({ name: 'manifest.json', data: await get('manifest.json') });
+  const names = [...new Set(c.m.layers)];
+  for (const n of names) files.push({ name: n + '.png', data: await get(n + '.png') });
+  return { blob: makeZip(files), name: c.key + '_sprites.zip', list: files.map(f => f.name) };
+}
+window.__spriteZip = spriteZip;
+function updDlLabel() { const b = $('dlSprites'); if (b && ch) b.title = ch.key + '_sprites.zip'; }
+$('char').addEventListener('change', () => setTimeout(updDlLabel, 500));
+$('dlSprites').onclick = async () => {
+  const btn = $('dlSprites'), msg = $('dlMsg'); btn.disabled = true; msg.hidden = false; msg.textContent = '압축 중…';
+  try {
+    if (!ch) throw new Error('캐릭터 로딩 중');
+    const z = await spriteZip(), url = URL.createObjectURL(z.blob), a = document.createElement('a');
+    a.href = url; a.download = z.name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    msg.textContent = z.name + ' (' + z.list.length + '개 파일)';
+  } catch (e) { console.warn('sprite download', e); msg.textContent = '다운로드 실패: ' + e.message + ' — assets/' + (ch ? ch.key : '') + '/ 폴더에서 직접 받을 수 있어요.'; }
+  finally { btn.disabled = false; }
+};

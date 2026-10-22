@@ -18,6 +18,6 @@ select{font-size:14px;padding:4px;border-radius:6px}
 #meter{margin-top:4px}#meter .track{display:inline-block;width:90px;height:8px;background:#fff3;vertical-align:middle}#meterBar{display:block;height:100%;width:0;background:#f8b840}#meterBar.hi{background:#ff5a8a}
 
 html.transp,body.transp{background:transparent!important}
-body.obs #panel,body.obs #hud,body.obs #video{display:none!important}
+body.obs #dlSprites,body.obs #dlMsg,body.obs #panel,body.obs #hud,body.obs #video{display:none!important}
 
 #c{touch-action:none;cursor:grab;position:relative}#c.drag{cursor:grabbing}
