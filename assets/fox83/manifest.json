@@ -1,0 +1,74 @@
+{
+ "name": "퇴근여우 v8.3 (고해상도)",
+ "S": 256,
+ "mode": "face",
+ "yaw": [
+  -2,
+  -1,
+  0,
+  1,
+  2
+ ],
+ "pitch": [
+  -1,
+  0,
+  1
+ ],
+ "angleIndex": "(pitch+1)*5+(yaw+2)",
+ "eyes": [
+  "open",
+  "half",
+  "closed",
+  "happy",
+  "tired",
+  "surprised",
+  "smug"
+ ],
+ "mouth": [
+  "cat",
+  "o1",
+  "o2",
+  "o3",
+  "o4",
+  "ro_s",
+  "ro_b",
+  "smile_m",
+  "smile_b",
+  "ee",
+  "smirk",
+  "grin",
+  "sigh",
+  "yawn",
+  "smile_c",
+  "puff"
+ ],
+ "brows": [
+  "neutral",
+  "raised",
+  "worried",
+  "smug"
+ ],
+ "tail": 24,
+ "rollPivot": [
+  128,
+  255
+ ],
+ "layers": [
+  "tail",
+  "base",
+  "eyes",
+  "mouth",
+  "brows",
+  "blush",
+  "sparkle",
+  "pin",
+  "ahoge"
+ ],
+ "mouthV2": true,
+ "mouthBig": false,
+ "ahoge": "animated ahoge: 0 rest,1 sway L,2 sway R,3 bounce up,4 squash,5 droop,6 droop more; pin = fox hairpin per angle",
+ "noEars": true,
+ "ahogeFrames": 7,
+ "note": "v8.1: side-view big mouth scaled (yaw±1 0.8x, ±2 0.65x); tight masks + palette snap + edge blend to remove box seams; natural tail-root fill. | v8.2: tail root segment behind hair/shoulder in all 24 tail frames (no gaps at any of 15 angles), hair-coloured back fill removed, floating outline fragments under chin removed. | v8.3: tail recoloured to orange only (no white/cream tip or highlights).",
+ "tailBreath": true
+}
