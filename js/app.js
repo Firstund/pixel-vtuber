@@ -8,17 +8,17 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261022-v8c';
-import { createTail, tailStep } from './tail.js?v=20261022-v8c';
-import { createEars, earStep } from './ears.js?v=20261022-v8c';
+import { mic, startMic, micTick } from './mic.js?v=20261022-v81';
+import { createTail, tailStep } from './tail.js?v=20261022-v81';
+import { createEars, earStep } from './ears.js?v=20261022-v81';
 const earSt = createEars(); let earLast = 0;
-import { createAhoge, ahogeStep } from './ahoge.js?v=20261022-v8c';
+import { createAhoge, ahogeStep } from './ahoge.js?v=20261022-v81';
 const ahoSt = createAhoge(); let ahoLast = 0;
-const CHARS = { fox8: 'assets/fox8/', fox71: 'assets/fox71/', fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
+const CHARS = { fox81: 'assets/fox81/', fox8: 'assets/fox8/', fox71: 'assets/fox71/', fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 // ---------- 소품 (모든 캐릭터 공통, 128px 캔버스 기준 위치) ----------
 const PROPS = { coffee: { name: '☕ 커피', x: 76, y: 94, hold: true }, laptop: { name: '💻 노트북', x: 44, y: 98 }, bag: { name: '👜 출근 가방', x: 0, y: 97 }, plant: { name: '🪴 화분', x: 98, y: 96 } };
 const propImg = {};
-for (const k of Object.keys(PROPS)) { const i = new Image(); i.src = 'assets/props/' + k + '.png?v=20261022-v8c'; propImg[k] = i; }
+for (const k of Object.keys(PROPS)) { const i = new Image(); i.src = 'assets/props/' + k + '.png?v=20261022-v81'; propImg[k] = i; }
 function drawProps(c, S, breath) {
   const on = window.__PS?.props || [], f = S / 128;
   for (const k of Object.keys(PROPS)) {
