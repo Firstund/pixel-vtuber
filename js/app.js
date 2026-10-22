@@ -8,17 +8,29 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261022-v84d';
-import { createTail, tailStep } from './tail.js?v=20261022-v84d';
-import { createEars, earStep } from './ears.js?v=20261022-v84d';
+import { mic, startMic, micTick } from './mic.js?v=20261022-v85';
+import { createTail, tailStep } from './tail.js?v=20261022-v85';
+import { createEars, earStep } from './ears.js?v=20261022-v85';
 const earSt = createEars(); let earLast = 0;
-import { createAhoge, ahogeStep } from './ahoge.js?v=20261022-v84d';
+import { createAhoge, ahogeStep } from './ahoge.js?v=20261022-v85';
 const ahoSt = createAhoge(); let ahoLast = 0;
-const CHARS = { fox84: 'assets/fox84/', fox83: 'assets/fox83/', fox82: 'assets/fox82/', fox81: 'assets/fox81/', fox8: 'assets/fox8/', fox71: 'assets/fox71/', fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
+// v8.5: frame-doubled sheets. sparkle frame count from sheet width; ahoge in-between frame shown briefly on state change (manifest ahogeTween).
+function spN(S) { return (ch.img.sparkle ? (ch.img.sparkle.width / S) | 0 : 3) || 3; }
+const ahoTw = { prev: -1, f: -1, until: 0 };
+function ahogeTweenFrame(fa, t) {
+  const tw = ch.m.ahogeTween; if (!tw) return fa;
+  if (ahoTw.prev >= 0 && fa !== ahoTw.prev) {
+    const k = tw[ahoTw.prev + '-' + fa] ?? tw[fa + '-' + ahoTw.prev];
+    if (k != null) { ahoTw.f = k; ahoTw.until = t + (ch.m.ahogeTweenMs || 70); }
+  }
+  ahoTw.prev = fa;
+  return t < ahoTw.until ? ahoTw.f : fa;
+}
+const CHARS = { fox85: 'assets/fox85/', fox84: 'assets/fox84/', fox83: 'assets/fox83/', fox82: 'assets/fox82/', fox81: 'assets/fox81/', fox8: 'assets/fox8/', fox71: 'assets/fox71/', fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 // ---------- 소품 (모든 캐릭터 공통, 128px 캔버스 기준 위치) ----------
 const PROPS = { coffee: { name: '☕ 커피', x: 76, y: 94, hold: true }, laptop: { name: '💻 노트북', x: 44, y: 98 }, bag: { name: '👜 출근 가방', x: 0, y: 97 }, plant: { name: '🪴 화분', x: 98, y: 96 } };
 const propImg = {};
-for (const k of Object.keys(PROPS)) { const i = new Image(); i.src = 'assets/props/' + k + '.png?v=20261022-v84d'; propImg[k] = i; }
+for (const k of Object.keys(PROPS)) { const i = new Image(); i.src = 'assets/props/' + k + '.png?v=20261022-v85'; propImg[k] = i; }
 function drawProps(c, S, breath) {
   const on = window.__PS?.props || [], f = S / 128;
   for (const k of Object.keys(PROPS)) {
@@ -335,8 +347,8 @@ function drawFull(t, ex, bounce) {
   octx.drawImage(I.frames, fullCol() * S, row * S, S, S, 0, Math.floor(t / 1200) % 2, S, S); // 숨쉬기 1px
   octx.restore();
   const animT = cfg.choppy ? pose.tick : Math.floor(t / 60);
-  if (I.sparkle && ex > 0.85) { const o = Math.round(S / 16); octx.drawImage(I.sparkle, ((Math.floor(t * 8 / 1000) + 1) % 3) * S, 0, S, S, -o, o, S, S); }
-  if (I.sparkle && st.sparkle && st.expr !== 'happy') octx.drawImage(I.sparkle, (Math.floor(animT / 2) % 3) * S, 0, S, S, 0, 0, S, S);
+  if (I.sparkle && ex > 0.85) { const o = Math.round(S / 16); octx.drawImage(I.sparkle, ((Math.floor(t * 8 * spN(S) / 3000) + spN(S) / 3) % spN(S)) * S, 0, S, S, -o, o, S, S); }
+  if (I.sparkle && st.sparkle && st.expr !== 'happy') octx.drawImage(I.sparkle, (Math.floor(animT * spN(S) / 6) % spN(S)) * S, 0, S, S, 0, 0, S, S);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(off, 0, 0, S, S, 0, bounce * scale, S * scale, S * scale);
 }
@@ -365,8 +377,8 @@ function drawFull2(t) {
   if (st.expr !== 'tired') D(I.ears, e, wigDx, wigDy);
   octx.restore();
   const animT = cfg.choppy ? pose.tick : Math.floor(t / 60);
-  if (I.sparkle && ex > 0.85) { const o = Math.round(S / 16); octx.drawImage(I.sparkle, ((Math.floor(t * 8 / 1000) + 1) % 3) * S, 0, S, S, -o, o, S, S); }
-  if (I.sparkle && st.sparkle) octx.drawImage(I.sparkle, (Math.floor(animT / 2) % 3) * S, 0, S, S, 0, 0, S, S);
+  if (I.sparkle && ex > 0.85) { const o = Math.round(S / 16); octx.drawImage(I.sparkle, ((Math.floor(t * 8 * spN(S) / 3000) + spN(S) / 3) % spN(S)) * S, 0, S, S, -o, o, S, S); }
+  if (I.sparkle && st.sparkle) octx.drawImage(I.sparkle, (Math.floor(animT * spN(S) / 6) % spN(S)) * S, 0, S, S, 0, 0, S, S);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(off, 0, 0, S, S, 0, bounce * scale, S * scale, S * scale);
 }
@@ -401,14 +413,15 @@ function drawFace(t) {
     const mood = window.__forceAhogeMood ?? (tired ? 'tired' : st.expr === 'surprised' ? 'surprised' : st.expr === 'smug' ? 'smug' : (st.expr === 'happy' || exc.hi) ? 'happy' : 'idle');
     const fa = ahogeStep(ahoSt, dt, ex, mood);
     if (I.pin) D(I.pin, 0);
-    if (I.ahoge) D(I.ahoge, fa);
-    window.__ahoge = { f: fa, mood };
+    const fd = ahogeTweenFrame(fa, t);
+    if (I.ahoge) D(I.ahoge, fd);
+    window.__ahoge = { f: fa, shown: fd, mood };
   }
   octx.restore();
   drawProps(octx, S, breath);
   const animT = cfg.choppy ? pose.tick : Math.floor(t / 60);
-  if (I.sparkle && ex > 0.85) { const o = Math.round(S / 16); octx.drawImage(I.sparkle, ((Math.floor(t * 8 / 1000) + 1) % 3) * S, 0, S, S, -o, o, S, S); }
-  if (I.sparkle && st.sparkle) octx.drawImage(I.sparkle, (Math.floor(animT / 2) % 3) * S, 0, S, S, 0, 0, S, S);
+  if (I.sparkle && ex > 0.85) { const o = Math.round(S / 16); octx.drawImage(I.sparkle, ((Math.floor(t * 8 * spN(S) / 3000) + spN(S) / 3) % spN(S)) * S, 0, S, S, -o, o, S, S); }
+  if (I.sparkle && st.sparkle) octx.drawImage(I.sparkle, (Math.floor(animT * spN(S) / 6) % spN(S)) * S, 0, S, S, 0, 0, S, S);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(off, 0, 0, S, S, 0, bounce * scale, S * scale, S * scale);
 }
