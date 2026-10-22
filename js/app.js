@@ -8,15 +8,30 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261022-v85';
-import { createTail, tailStep } from './tail.js?v=20261022-v85';
-import { createEars, earStep } from './ears.js?v=20261022-v85';
+import { mic, startMic, micTick } from './mic.js?v=20261023-v9';
+import { createTail, tailStep } from './tail.js?v=20261023-v9';
+import { createEars, earStep } from './ears.js?v=20261023-v9';
 const earSt = createEars(); let earLast = 0;
-import { createAhoge, ahogeStep } from './ahoge.js?v=20261022-v85';
+import { createAhoge, ahogeStep } from './ahoge.js?v=20261023-v9';
 const ahoSt = createAhoge(); let ahoLast = 0;
 // v8.5: frame-doubled sheets. sparkle frame count from sheet width; ahoge in-between frame shown briefly on state change (manifest ahogeTween).
 function spN(S) { return (ch.img.sparkle ? (ch.img.sparkle.width / S) | 0 : 3) || 3; }
 const ahoTw = { prev: -1, f: -1, until: 0 };
+// v9: separate ear layer (drawn behind hair). Occasional slow twitch: frames 0 rest, 1/2 left half/full, 3/4 right half/full.
+const earTw = { next: 0, seq: [], t0: 0 };
+function earTwitchFrame(t) {
+  if (!earTw.next) earTw.next = t + 4000 + Math.random() * 5000;
+  if (!earTw.seq.length && t >= earTw.next) {
+    const b = Math.random() < 0.5 ? 1 : 3, both = Math.random() < 0.2;
+    earTw.seq = [b, b + 1, b + 1, b + 1, b, 0].map(f => both ? f : f); earTw.t0 = t;
+  }
+  if (earTw.seq.length) {
+    const i = Math.floor((t - earTw.t0) / (ch.m.earTwitchMs || 110));
+    if (i < earTw.seq.length) return earTw.seq[i];
+    earTw.seq = []; earTw.next = t + 5000 + Math.random() * 7000;
+  }
+  return 0;
+}
 function ahogeTweenFrame(fa, t) {
   const tw = ch.m.ahogeTween; if (!tw) return fa;
   if (ahoTw.prev >= 0 && fa !== ahoTw.prev) {
@@ -26,11 +41,11 @@ function ahogeTweenFrame(fa, t) {
   ahoTw.prev = fa;
   return t < ahoTw.until ? ahoTw.f : fa;
 }
-const CHARS = { fox85: 'assets/fox85/', fox84: 'assets/fox84/', fox83: 'assets/fox83/', fox82: 'assets/fox82/', fox81: 'assets/fox81/', fox8: 'assets/fox8/', fox71: 'assets/fox71/', fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
+const CHARS = { fox9: 'assets/fox9/', fox85: 'assets/fox85/', fox84: 'assets/fox84/', fox83: 'assets/fox83/', fox82: 'assets/fox82/', fox81: 'assets/fox81/', fox8: 'assets/fox8/', fox71: 'assets/fox71/', fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 // ---------- 소품 (모든 캐릭터 공통, 128px 캔버스 기준 위치) ----------
 const PROPS = { coffee: { name: '☕ 커피', x: 76, y: 94, hold: true }, laptop: { name: '💻 노트북', x: 44, y: 98 }, bag: { name: '👜 출근 가방', x: 0, y: 97 }, plant: { name: '🪴 화분', x: 98, y: 96 } };
 const propImg = {};
-for (const k of Object.keys(PROPS)) { const i = new Image(); i.src = 'assets/props/' + k + '.png?v=20261022-v85'; propImg[k] = i; }
+for (const k of Object.keys(PROPS)) { const i = new Image(); i.src = 'assets/props/' + k + '.png?v=20261023-v9'; propImg[k] = i; }
 function drawProps(c, S, breath) {
   const on = window.__PS?.props || [], f = S / 128;
   for (const k of Object.keys(PROPS)) {
@@ -397,6 +412,7 @@ function drawFace(t) {
   if (pose.shown.r) { octx.translate(rx, ry); octx.rotate(pose.shown.r * ROLL_DEG * 0.55 * Math.PI / 180); octx.translate(-rx, -ry); }
   if (I.tail) octx.drawImage(I.tail, tailFrame(t, ex) * S, 0, S, S, 0, ch.m.tailBreath ? breath : 0, S, S);
   const D = (im, col, dy = 0) => octx.drawImage(im, col * S, row * S, S, S, 0, breath + dy, S, S);
+  if (I.ears9) { const fe = window.__forceEar9 ?? earTwitchFrame(t); D(I.ears9, fe); window.__ears9 = fe; }
   D(I.base, 0);
   const edy = ch.m.mouthBig && st.mouthLv >= 4 ? -1 : 0;
   D(I.eyes, st.eye, edy); D(I.mouth, st.mouth); D(I.brows, st.brow, edy);
