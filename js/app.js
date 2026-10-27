@@ -8,11 +8,11 @@ const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261023-v92c';
-import { createTail, tailStep } from './tail.js?v=20261023-v92c';
-import { createEars, earStep } from './ears.js?v=20261023-v92c';
+import { mic, startMic, micTick } from './mic.js?v=20261028-v93';
+import { createTail, tailStep } from './tail.js?v=20261028-v93';
+import { createEars, earStep } from './ears.js?v=20261028-v93';
 const earSt = createEars(); let earLast = 0;
-import { createAhoge, ahogeStep } from './ahoge.js?v=20261023-v92c';
+import { createAhoge, ahogeStep } from './ahoge.js?v=20261028-v93';
 const ahoSt = createAhoge(); let ahoLast = 0;
 // v8.5: frame-doubled sheets. sparkle frame count from sheet width; ahoge in-between frame shown briefly on state change (manifest ahogeTween).
 function spN(S) { return (ch.img.sparkle ? (ch.img.sparkle.width / S) | 0 : 3) || 3; }
@@ -41,11 +41,11 @@ function ahogeTweenFrame(fa, t) {
   ahoTw.prev = fa;
   return t < ahoTw.until ? ahoTw.f : fa;
 }
-const CHARS = { fox92: 'assets/fox92/', fox91: 'assets/fox91/', fox9: 'assets/fox9/', fox85: 'assets/fox85/', fox84: 'assets/fox84/', fox83: 'assets/fox83/', fox82: 'assets/fox82/', fox81: 'assets/fox81/', fox8: 'assets/fox8/', fox71: 'assets/fox71/', fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
+const CHARS = { fox93: 'assets/fox93/', fox92: 'assets/fox92/', fox91: 'assets/fox91/', fox9: 'assets/fox9/', fox85: 'assets/fox85/', fox84: 'assets/fox84/', fox83: 'assets/fox83/', fox82: 'assets/fox82/', fox81: 'assets/fox81/', fox8: 'assets/fox8/', fox71: 'assets/fox71/', fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 // ---------- 소품 (모든 캐릭터 공통, 128px 캔버스 기준 위치) ----------
 const PROPS = { coffee: { name: '☕ 커피', x: 76, y: 94, hold: true }, laptop: { name: '💻 노트북', x: 44, y: 98 }, bag: { name: '👜 출근 가방', x: 0, y: 97 }, plant: { name: '🪴 화분', x: 98, y: 96 } };
 const propImg = {};
-for (const k of Object.keys(PROPS)) { const i = new Image(); i.src = 'assets/props/' + k + '.png?v=20261023-v92c'; propImg[k] = i; }
+for (const k of Object.keys(PROPS)) { const i = new Image(); i.src = 'assets/props/' + k + '.png?v=20261028-v93'; propImg[k] = i; }
 function drawProps(c, S, breath) {
   const on = window.__PS?.props || [], f = S / 128;
   for (const k of Object.keys(PROPS)) {
@@ -68,6 +68,8 @@ async function loadChar(key) {
   octx.imageSmoothingEnabled = hctx.imageSmoothingEnabled = false;
   resize();
   window.__char = key;
+  const rb = document.getElementById('react'); if (rb) rb.hidden = !m.reactions;
+  if (typeof RX !== 'undefined') { RX.manual = RX.auto = null; }
 }
 
 // ---------- 설정 UI ----------
@@ -176,6 +178,11 @@ if (params.get('clean') === '1') setClean(true);
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' || e.key === 'h') setClean(!document.body.classList.contains('clean') && e.key === 'h');
   if (e.key === 'Escape') document.body.classList.remove('obs');
+  if (e.target && e.target.closest && e.target.closest('input,textarea,select,[contenteditable]')) return; // 입력 중엔 단축키 무시
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (ch && ch.m.reactions) { // v9.3: 1~6 리액션, 0/` 해제
+    const r = REACT_KEYS[e.key]; if (r !== undefined) { react(r); e.preventDefault(); return; }
+  }
   const k = { '1': 'auto', '2': 'happy', '3': 'tired', '4': 'surprised', '5': 'smug' }[e.key]; if (k) setExpr(k);
 });
 let lastTap = 0;
@@ -184,6 +191,22 @@ document.addEventListener('dblclick', () => { setClean(false); document.body.cla
 const status = s => { $('status').textContent = s; };
 const showErr = s => { const e = $('err'); e.hidden = !s; e.textContent = s || ''; };
 let exprOverride = 'auto';
+// v9.3 리액션: 단축키/버튼 → 일정 시간 뒤 자동 해제
+const REACTS = ['surprise', 'tired', 'flustered', 'wink', 'happy', 'angry'];
+const REACT_LABEL = { surprise: '놀람', tired: '한숨', flustered: '당황', wink: '윙크', happy: '^^', angry: '화남' };
+const REACT_KEYS = { '1': 'surprise', '2': 'tired', '3': 'flustered', '4': 'wink', '5': 'happy', '6': 'angry', '0': null, '`': null };
+const RX = { manual: null, until: 0, auto: null, autoSince: 0, cand: null, browF: 0, browCand: 0, browSince: 0, gxL: 1, gyL: 1 };
+function react(name) {
+  RX.manual = name; RX.until = name ? performance.now() + ((ch && ch.m.reactMs) || 2500) : 0;
+  if (name === 'surprise') { earTw.seq = [1, 2, 2, 0, 3, 4, 4, 0]; earTw.t0 = performance.now(); }
+  document.querySelectorAll('#react button').forEach(b => b.classList.toggle('on', b.dataset.r === name));
+}
+{
+  const box = document.getElementById('react');
+  if (box) {
+    REACTS.forEach((r, i) => { const b = document.createElement('button'); b.dataset.r = r; b.textContent = `${i + 1} ${REACT_LABEL[r]}`; b.onclick = () => react(RX.manual === r ? null : r); box.appendChild(b); });
+  }
+}
 function setExpr(k) { exprOverride = k; document.querySelectorAll('#expr button').forEach(b => b.classList.toggle('on', b.dataset.e === k)); }
 document.querySelectorAll('#expr button').forEach(b => b.onclick = () => setExpr(b.dataset.e));
 $('char').onchange = async e => { await loadChar(e.target.value); };
@@ -206,7 +229,7 @@ function resize() {
 new ResizeObserver(resize).observe($('stage'));
 
 // ---------- 스무딩 / 히스테리시스 ----------
-const sm = { blinkL: 0, blinkR: 0, stretch: 0, asym: 0, puff: 0, squint: 0, jaw: 0, funnel: 0, smile: 0, blink: 0, brow: 0, wide: 0, yaw: 0, pitch: 0, roll: 0 };
+const sm = { gx: 0, gy: 0, browDown: 0, browOuter: 0, blinkL: 0, blinkR: 0, stretch: 0, asym: 0, puff: 0, squint: 0, jaw: 0, funnel: 0, smile: 0, blink: 0, brow: 0, wide: 0, yaw: 0, pitch: 0, roll: 0 };
 function smooth(key, v, k = cfg.smooth) { sm[key] = sm[key] * k + v * (1 - k); return sm[key]; }
 // 오름차순 경계값 ths, 현재 레벨 cur 기준 ±h 여유(데드존)를 둔 레벨
 function level(v, cur, ths, h) {
@@ -273,6 +296,45 @@ function decideV2(b, jaw, fun, smi, ex, eye, browF) {
   window.__mv = { lv, fine: MV.fine, shape, name, eye, blush };
   return { eye, mouth, browF, blush };
 }
+// v9.3: 표정 리액션 + 시선 + 눈썹 (manifest.reactions / gaze). 반환값으로 프레임을 덮어씀
+function reactions(b, s, t) {
+  const m = ch.m, E = n => Math.max(0, m.eyes.indexOf(n)), Mo = n => Math.max(0, m.mouth.indexOf(n)), B = n => Math.max(0, m.brows.indexOf(n));
+  // 시선: 3x3, 히스테리시스
+  if (m.gaze) {
+    const gx = smooth('gx', b.gx || 0, 0.5), gy = smooth('gy', b.gy || 0, 0.5);
+    RX.gxL = level(cfg.mirror ? -gx : gx, RX.gxL, [-0.22, 0.22], 0.06); RX.gyL = level(-gy, RX.gyL, [-0.2, 0.2], 0.06);
+    st.gaze = RX.gyL * 3 + RX.gxL;
+  } else st.gaze = 4;
+  // 눈썹: browOuterUp→올림, browInnerUp만→슬픔, browDown→내림/화남 (150ms 유지 후 전환)
+  const bd = smooth('browDown', b.browDown || 0), bo = smooth('browOuter', b.browOuter || 0), bi = sm.brow;
+  const cur = RX.browF, hy = (n, v, th) => v > th + (cur === B(n) ? -0.06 : 0.06);
+  let want = s.browF;
+  if (hy('angry', bd, 0.55)) want = B('angry'); else if (hy('down', bd, 0.3)) want = B('down');
+  else if (hy('raised', bo, 0.45)) want = B('raised'); else if (hy('worried', bi, 0.45)) want = B('worried');
+  if (want !== RX.browCand) { RX.browCand = want; RX.browSince = t; }
+  if (t - RX.browSince > 150) RX.browF = want;
+  let { eye, mouth, blush } = s, browF = RX.browF || s.browF;
+  // 자동 리액션 (추적): 놀람 / 한숨 / 화남 — 300ms 지속돼야 켜지고, 꺼질 땐 500ms 유예
+  let a = null;
+  if (s.ex === 'surprised' || (s.wide > 0.5 && bo > 0.45)) a = 'surprise';
+  else if (bd > 0.6 && s.jaw < 0.2) a = 'angry';
+  else if (eyeLv === 1 && bd > 0.3) a = 'tired';
+  if (a !== RX.cand) { RX.cand = a; RX.autoSince = t; }
+  if (a && t - RX.autoSince > 300) RX.auto = a;
+  if (!a && t - RX.autoSince > 500) RX.auto = null;
+  if (RX.manual && performance.now() > RX.until) react(null);
+  const r = RX.manual || RX.auto; st.react = r; st.fx = 0; st.blushF = 0; st.reactTail = 0;
+  const closed = eyeLv === 2;
+  if (r === 'surprise') { if (!closed) eye = E('surprised'); mouth = Mo(s.jaw > 0.25 ? 'ro_b' : 'ro_s'); browF = B('raised'); st.fx = 1; st.reactTail = 1; }
+  else if (r === 'tired') { if (!closed) eye = E('half'); mouth = Mo('sigh'); browF = B('down'); st.fx = 2; }
+  else if (r === 'flustered') { eye = E('xx'); mouth = Mo('wavy'); browF = B('worried'); blush = true; st.blushF = 1; st.fx = 3; }
+  else if (r === 'wink') { mouth = Mo(s.jaw > 0.2 ? 'smile_b' : 'smile_m'); browF = B('smug'); blush = true; st.fx = 5; }
+  else if (r === 'happy') { eye = E('happy'); mouth = Mo(s.jaw > 0.2 || !RX.auto ? 'smile_b' : 'smile_m'); browF = B('raised'); blush = true; st.reactTail = 1; }
+  else if (r === 'angry') { if (!closed) eye = 0; mouth = Mo(s.jaw > 0.2 ? 'grin' : 'ee'); browF = B('angry'); st.fx = 4; }
+  if (r === 'wink') { st.eyeL = 0; st.eyeR = E('happy'); st.winkSet = true; } else st.winkSet = false;
+  if (s.ex === 'happy' || st.reactTail) st.reactTail = 1;
+  return { eye, mouth, browF, blush };
+}
 function decide(b, auto, t) {
   const jaw = smooth('jaw', b.jaw), fun = smooth('funnel', b.funnel), smi = smooth('smile', b.smile);
   const blink = smooth('blink', b.blink, Math.min(cfg.smooth, 0.3)); // 깜빡임은 빠르게
@@ -322,6 +384,8 @@ function decide(b, auto, t) {
   // 화면 기준 왼쪽/오른쪽 눈 프레임. 거울 모드: 사용자 왼눈(eyeBlinkLeft) → 화면 왼쪽
   const sL = cfg.mirror ? eyeSide.L : eyeSide.R, sR = cfg.mirror ? eyeSide.R : eyeSide.L;
   st.eyeL = split && sL > eyeLv ? sL : null; st.eyeR = split && sR > eyeLv ? sR : null;
+  if (ch.m.reactions) ({ eye, mouth, browF, blush } = reactions(b, { eye, mouth, browF, blush, ex, jaw, smi, wide }, t));
+  else { st.fx = 0; st.blushF = 0; }
   Object.assign(st, { eye, mouth, brow: browF, ears, sparkle, expr: ex, blush: blush || (ex === 'happy') || exc.hi });
   // --- 머리 각도: 양자화 + 히스테리시스 (데드존)
   pose.yawL = level(yaw, pose.yawL, YAW_TH, YAW_H);
@@ -429,20 +493,22 @@ function drawFace(t) {
   const [rx, ry] = ch.m.rollPivot || [S / 2, S - 1];
   octx.save();
   if (pose.shown.r) { octx.translate(rx, ry); octx.rotate(pose.shown.r * ROLL_DEG * 0.55 * Math.PI / 180); octx.translate(-rx, -ry); }
-  if (I.tail) octx.drawImage(I.tail, tailFrame(t, ex) * S, 0, S, S, 0, ch.m.tailBreath ? breath : 0, S, S);
+  if (I.tail) octx.drawImage(I.tail, tailFrame(t, ch.m.reactions && st.reactTail ? Math.max(ex, 1) : ex) * S, 0, S, S, 0, ch.m.tailBreath ? breath : 0, S, S);
   const D = (im, col, dy = 0) => octx.drawImage(im, col * S, row * S, S, S, 0, breath + dy, S, S);
   if (I.ears9) { const fe = window.__forceEar9 ?? earTwitchFrame(t); D(I.ears9, fe); window.__ears9 = fe; }
   D(I.base, 0);
   const edy = ch.m.mouthBig && st.mouthLv >= 4 ? -1 : 0;
+  const gz = f => (f === 0 && ch.m.gaze && st.gaze != null && st.gaze !== 4) ? ch.m.eyes.indexOf('g' + st.gaze) : f;
   if (ch.m.eyeSplit && (st.eyeL != null || st.eyeR != null)) {
     const sx = ch.m.eyeSplitX[row];
-    for (const [x0, w, f] of [[0, sx, st.eyeL ?? st.eye], [sx, S - sx, st.eyeR ?? st.eye]]) {
+    for (const [x0, w, f] of [[0, sx, gz(st.eyeL ?? st.eye)], [sx, S - sx, gz(st.eyeR ?? st.eye)]]) {
       octx.save(); octx.beginPath(); octx.rect(x0, -S, w, 3 * S); octx.clip(); D(I.eyes, f, edy); octx.restore();
     }
-  } else D(I.eyes, st.eye, edy);
+  } else D(I.eyes, gz(st.eye), edy);
   window.__eyes = { L: st.eyeL ?? st.eye, R: st.eyeR ?? st.eye };
   D(I.mouth, st.mouth); D(I.brows, st.brow, edy);
-  if (I.blush && st.blush) D(I.blush, 0);
+  if (I.blush && st.blush) D(I.blush, st.blushF || 0);
+  if (I.fx && st.fx) D(I.fx, st.fx);
   if (I.earL) {
     const dt = Math.min(200, t - (earLast || t)); earLast = t;
     const [fL, fR] = tired ? [0, 0] : earStep(earSt, dt, Math.round(ex * 5) / 5, () => window.__forceEar);
@@ -546,6 +612,10 @@ function readResult(r) {
     smile: ((m.mouthSmileLeft || 0) + (m.mouthSmileRight || 0)) / 2,
     blink: Math.max(m.eyeBlinkLeft || 0, m.eyeBlinkRight || 0) * 0.5 + ((m.eyeBlinkLeft || 0) + (m.eyeBlinkRight || 0)) / 4,
     blinkL: m.eyeBlinkLeft || 0, blinkR: m.eyeBlinkRight || 0,
+    // v9.3: 시선 (사용자 기준 +gx = 사용자 왼쪽, +gy = 위) · 눈썹 세부
+    gx: ((m.eyeLookOutLeft || 0) + (m.eyeLookInRight || 0) - (m.eyeLookInLeft || 0) - (m.eyeLookOutRight || 0)) / 2,
+    gy: ((m.eyeLookUpLeft || 0) + (m.eyeLookUpRight || 0) - (m.eyeLookDownLeft || 0) - (m.eyeLookDownRight || 0)) / 2,
+    browDown: ((m.browDownLeft || 0) + (m.browDownRight || 0)) / 2, browOuter: ((m.browOuterUpLeft || 0) + (m.browOuterUpRight || 0)) / 2,
     brow: m.browInnerUp || 0, wide: ((m.eyeWideLeft || 0) + (m.eyeWideRight || 0)) / 2, yaw: 0, pitch: 0, roll: 0,
     stretch: ((m.mouthStretchLeft || 0) + (m.mouthStretchRight || 0)) / 2, smileAsym: (m.mouthSmileLeft || 0) - (m.mouthSmileRight || 0),
     puff: m.cheekPuff || 0, squint: ((m.eyeSquintLeft || 0) + (m.eyeSquintRight || 0)) / 2,
@@ -627,7 +697,7 @@ $('char').value = ch.key;
 requestAnimationFrame(loop);
 // 테스트용: 가짜 MediaPipe 결과를 실제 readResult 경로로 주입
 function simResult(r) { mode = 'sim'; latest = readResult(r); }
-window.__app = { mic, exc, st, pose, cfg, startCamera, loadModel, loadChar, setExpr, simResult };
+window.__app = { mic, exc, st, pose, cfg, startCamera, loadModel, loadChar, setExpr, simResult, react, RX };
 
 // ---------- 스프라이트 시트 다운로드 (store-only zip, no deps) ----------
 const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
