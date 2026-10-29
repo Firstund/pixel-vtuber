@@ -20,10 +20,15 @@ function render(){const c=cats[ci];$('cat').textContent=c?c.name:'-';
  $('tabs').innerHTML='';cats.forEach((k,i)=>{const b=document.createElement('button');b.textContent=(i+1)+'. '+k.name;if(i===ci)b.className='act';b.onclick=()=>setCat(i,true);$('tabs').append(b)});
  const l=$('list');l.innerHTML='';if(!c||!c.tracks.length){l.innerHTML='<li class="empty">음악을 추가해 주세요</li>';}
  else c.tracks.forEach((t,i)=>{const li=document.createElement('li');li.textContent=t.title;if(i===ti&&audio.src)li.className='cur';li.onclick=()=>{oi=order.indexOf(i);load(i,true)};l.append(li)});
- $('pp').textContent=playing?'⏸ 일시정지':'▶ 재생';$('hpp').textContent=playing?'⏸':'▶';$('shuf').checked=shuffle;$('vol').value=vol}
+ $('pp').textContent=playing?'⏸ 일시정지':'▶ 재생';$('hpp').textContent=playing?'⏸':'▶';$('shuf').checked=shuffle;$('vol').value=vol;coverState()}
 const DEF='cover/fox_cover.png',BLK='cover/fox_cover_blink.png';let covDef=true;
-function setCover(u){const im=$('covimg');covDef=!u;im.src=u?encodeURI(u):DEF;im.onerror=()=>{if(!covDef){covDef=true;im.src=DEF}}}
-if(CARD){setCover();new Image().src=BLK;(function blink(){setTimeout(()=>{const im=$('covimg');if(covDef&&playing){im.src=BLK;setTimeout(()=>{if(covDef)im.src=DEF},150)}blink()},2500+Math.random()*3000)})()}
+function setCover(u){const im=$('covimg');covDef=!u;im.src=u?encodeURI(u):DEF;coverState&&setTimeout(coverState);im.onerror=()=>{if(!covDef){covDef=true;im.src=DEF}}}
+const HAP='cover/fox_cover_happy.png';
+function coverState(){if(!CARD)return;const L=covDef&&playing,cv=$('cover'),im=$('covimg');cv.classList.toggle('listen',L);
+ if(covDef){const w=L?HAP:DEF;if(!im.src.endsWith(w))im.src=w}}
+if(CARD){setCover();[BLK,HAP].forEach(u=>new Image().src=u);
+ (function blink(){setTimeout(()=>{const im=$('covimg');if(covDef&&!playing){im.src=BLK;setTimeout(()=>{if(covDef&&!playing)im.src=DEF},150)}blink()},2500+Math.random()*3000)})();
+ (function note(){setTimeout(()=>{const n=$('note');if(covDef&&playing){n.style.left=(10+Math.random()*70|0)+'px';n.classList.remove('up');void n.offsetWidth;n.classList.add('up')}note()},2200+Math.random()*2500)})()}
 function setTitle(t){const mq=$('mq'),s=$('title');s.textContent=t;mq.classList.remove('run');
  requestAnimationFrame(()=>{if(s.scrollWidth>mq.clientWidth){mq.style.setProperty('--d',(s.scrollWidth/40+4)+'s');mq.classList.add('run')}})}
 async function load(i,play){const c=cats[ci];if(!c||!c.tracks.length){audio.pause();audio.removeAttribute('src');playing=false;setTitle('음악을 추가해 주세요');$('dur').textContent='00:00';$('cur').textContent='00:00';upd();render();return}

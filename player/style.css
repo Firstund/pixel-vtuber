@@ -59,3 +59,13 @@ body.obs .panel{display:none}
 .skin-card .cover{display:block;flex:none;width:108px;height:108px;background:#2e1d44;box-shadow:0 0 0 2px var(--c),3px 3px 0 2px #3a2550;overflow:hidden}
 .skin-card .cover img{width:108px;height:108px;display:block;image-rendering:pixelated;object-fit:cover}
 .skin-card .s1{left:auto;right:16px;top:auto;bottom:12px}.skin-card .s2{left:auto;right:150px;top:10px;bottom:auto}
+.phones,.note{display:none}
+.skin-card .cover{position:relative}
+.skin-card .cvw{position:relative;width:108px;height:108px}
+.skin-card .phones{display:block;position:absolute;left:0;top:0;width:108px;height:108px;image-rendering:pixelated;opacity:0;transform:translateY(-36px);transition:transform .3s steps(3),opacity .3s steps(3)}
+.skin-card .listen .phones{opacity:1;transform:translateY(0)}
+.skin-card .listen .cvw{animation:bob 1s steps(1) .35s infinite}
+@keyframes bob{50%{transform:translateY(2px)}}
+.skin-card .note{display:block;position:absolute;bottom:20px;color:var(--c);font-size:14px;line-height:1;opacity:0;text-shadow:1px 1px 0 #3a2550}
+.skin-card .note.up{animation:nt 1.6s steps(8) forwards}
+@keyframes nt{0%{opacity:0;transform:translateY(0)}20%{opacity:1}80%{opacity:1}100%{opacity:0;transform:translateY(-40px)}}
