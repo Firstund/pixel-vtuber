@@ -28,7 +28,7 @@ function coverState(){if(!CARD)return;const L=covDef&&playing,cv=$('cover'),im=$
  if(covDef){const w=L?HAP:DEF;if(!im.src.endsWith(w))im.src=w}}
 if(CARD){setCover();[BLK,HAP].forEach(u=>new Image().src=u);
  (function blink(){setTimeout(()=>{const im=$('covimg');if(covDef&&!playing){im.src=BLK;setTimeout(()=>{if(covDef&&!playing)im.src=DEF},150)}blink()},2500+Math.random()*3000)})();
- (function note(){setTimeout(()=>{const n=$('note');if(covDef&&playing){n.style.left=(10+Math.random()*70|0)+'px';n.classList.remove('up');void n.offsetWidth;n.classList.add('up')}note()},2200+Math.random()*2500)})()}
+ (function note(){setTimeout(()=>{const n=$('note');if(covDef&&playing){n.style.left=(Math.random()<.5?2+Math.random()*8:90+Math.random()*8|0)+'px';n.classList.remove('up');void n.offsetWidth;n.classList.add('up')}note()},2200+Math.random()*2500)})()}
 function setTitle(t){const mq=$('mq'),s=$('title');s.textContent=t;mq.classList.remove('run');
  requestAnimationFrame(()=>{if(s.scrollWidth>mq.clientWidth){mq.style.setProperty('--d',(s.scrollWidth/40+4)+'s');mq.classList.add('run')}})}
 async function load(i,play){const c=cats[ci];if(!c||!c.tracks.length){audio.pause();audio.removeAttribute('src');playing=false;setTitle('음악을 추가해 주세요');$('dur').textContent='00:00';$('cur').textContent='00:00';upd();render();return}

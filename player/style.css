@@ -62,10 +62,10 @@ body.obs .panel{display:none}
 .phones,.note{display:none}
 .skin-card .cover{position:relative}
 .skin-card .cvw{position:relative;width:108px;height:108px}
-.skin-card .phones{display:block;position:absolute;left:0;top:0;width:108px;height:108px;image-rendering:pixelated;opacity:0;transform:translateY(-36px);transition:transform .3s steps(3),opacity .3s steps(3)}
-.skin-card .listen .phones{opacity:1;transform:translateY(0)}
+.skin-card .phones{display:block;position:absolute;left:0;top:0;width:108px;height:108px;image-rendering:pixelated;clip-path:inset(0 0 100% 0);transform:translateY(-4px);transition:clip-path .3s steps(3),transform .3s steps(2)}
+.skin-card .listen .phones{clip-path:inset(0);transform:translateY(0)}
 .skin-card .listen .cvw{animation:bob 1s steps(1) .35s infinite}
 @keyframes bob{50%{transform:translateY(2px)}}
-.skin-card .note{display:block;position:absolute;bottom:20px;color:var(--c);font-size:14px;line-height:1;opacity:0;text-shadow:1px 1px 0 #3a2550}
+.skin-card .note{display:block;position:absolute;bottom:4px;color:var(--c);font-size:14px;line-height:1;opacity:0;text-shadow:1px 1px 0 #3a2550}
 .skin-card .note.up{animation:nt 1.6s steps(8) forwards}
-@keyframes nt{0%{opacity:0;transform:translateY(0)}20%{opacity:1}80%{opacity:1}100%{opacity:0;transform:translateY(-40px)}}
+@keyframes nt{0%{opacity:0;transform:translateY(0)}20%{opacity:1}80%{opacity:1}100%{opacity:0;transform:translateY(-22px)}}
