@@ -1,12 +1,12 @@
 {
   "categories": [
-    { "id": "opening", "name": "오프닝", "tracks": [
+    { "id": "opening", "name": "출근 도장", "tracks": [
       { "title": "퇴근길 로파이", "file": "audio/opening/lofi_loop_3min.mp3" }
     ]},
-    { "id": "chat", "name": "저챗", "tracks": [] },
-    { "id": "rest", "name": "휴식", "tracks": [
+    { "id": "chat", "name": "수다 타임", "tracks": [] },
+    { "id": "rest", "name": "잠깐 퇴근", "tracks": [
       { "title": "잠깐 쉬어가요 로파이", "file": "audio/rest/lofi_rest_3min.mp3" }
     ]},
-    { "id": "ending", "name": "엔딩", "tracks": [] }
+    { "id": "ending", "name": "퇴근 완료", "tracks": [] }
   ]
 }

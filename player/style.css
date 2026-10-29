@@ -30,3 +30,26 @@ button:hover,button.act{background:var(--o);color:var(--p2)}
 body.obs .panel{display:none}
 .start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0008}
 .start button{font-size:24px;padding:12px 20px}.hidden{display:none}
+/* ---- skin=card (시안) ---- */
+.sun,.star{display:none}
+.skin-card .widget{width:540px;height:120px;border:none;box-shadow:none;background:linear-gradient(180deg,#4a2f6e 0%,#7a3f7a 45%,#d0605a 78%,#ff8a4c 100%);
+ clip-path:polygon(0 8px,4px 8px,4px 4px,8px 4px,8px 0,calc(100% - 8px) 0,calc(100% - 8px) 4px,calc(100% - 4px) 4px,calc(100% - 4px) 8px,100% 8px,100% calc(100% - 8px),calc(100% - 4px) calc(100% - 8px),calc(100% - 4px) calc(100% - 4px),calc(100% - 8px) calc(100% - 4px),calc(100% - 8px) 100%,8px 100%,8px calc(100% - 4px),4px calc(100% - 4px),4px calc(100% - 8px),0 calc(100% - 8px))}
+.skin-card .widget::before{content:"";position:absolute;inset:4px;border:2px solid var(--c);pointer-events:none;
+ clip-path:polygon(0 4px,4px 4px,4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px))}
+.skin-card #fox{width:72px;height:72px;background:#3a255080;padding:4px}
+.skin-card .info{position:relative}
+.skin-card .cat{background:var(--c);color:#4a2f6e;font-size:12px}
+.skin-card .label,.skin-card .marquee,.skin-card .time{color:var(--c)}
+.skin-card .marquee{text-shadow:2px 2px 0 #3a2550}
+.skin-card .bar{gap:3px;height:12px;background:#3a2550;border:2px solid var(--c);padding:2px;margin-right:8px}
+.skin-card .bar i{background:#5b3a7a}
+.skin-card .bar i.on{background:var(--o2)}.skin-card .bar i.on:nth-child(even){background:#ffc98a}
+.skin-card .sun{display:block;position:absolute;top:58px;width:12px;height:12px;margin-left:-4px;background:#ffdf6b;
+ box-shadow:0 0 0 2px #ff8a4c;clip-path:polygon(25% 0,75% 0,75% 25%,100% 25%,100% 75%,75% 75%,75% 100%,25% 100%,25% 75%,0 75%,0 25%,25% 25%);transition:left .5s steps(4)}
+.skin-card .info .sun{left:0}
+.skin-card .time{font-size:15px;text-shadow:2px 2px 0 #3a2550}
+.skin-card .star{display:block;position:absolute;width:4px;height:4px;background:var(--c);animation:tw 2.4s steps(2) infinite}
+.skin-card .s1{left:14px;top:12px}.skin-card .s2{left:96px;bottom:14px;animation-delay:1.2s}
+@keyframes tw{50%{opacity:.15}}
+.skin-card .widget.swap .info{animation:fi .3s steps(3)}
+@keyframes fi{from{opacity:0}to{opacity:1}}

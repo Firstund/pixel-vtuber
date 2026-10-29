@@ -5,7 +5,8 @@ const LS={get:k=>{try{return localStorage.getItem('pvp_'+k)}catch(e){}},set:(k,v
 const audio=new Audio();audio.preload='auto';
 let cats=[],ci=0,ti=0,order=[],oi=0,shuffle=P.get('shuffle')==='1';
 let vol=parseFloat(P.get('vol')??LS.get('vol')??'0.6');if(isNaN(vol))vol=0.6;vol=Math.min(1,Math.max(0,vol));
-let fadeT=null,playing=false;const N=30;
+const CARD=P.get('skin')==='card';if(CARD)document.body.classList.add('skin-card');
+let fadeT=null,playing=false;const N=CARD?12:30;
 $('bar').innerHTML='<i></i>'.repeat(N);const cells=[...$('bar').children];
 const fmt=s=>{s=Math.floor(s||0);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
 function fade(to,ms=600){return new Promise(r=>{clearInterval(fadeT);const from=audio.volume,t0=performance.now();
@@ -34,7 +35,7 @@ function step(d){const n=order.length;if(!n)return;oi=(oi+d+n)%n;if(d>0&&oi===0&
 function setCat(i,play){if(!cats[i])return;ci=i;LS.set('cat',cats[i].id);buildOrder();load(order[0]??0,play??playing)}
 function setVol(v){vol=Math.round(Math.min(1,Math.max(0,v))*100)/100;LS.set('vol',vol);clearInterval(fadeT);if(playing)audio.volume=vol;render()}
 function upd(){const d=audio.duration||0,t=audio.currentTime||0;$('cur').textContent=fmt(t);$('dur').textContent=fmt(d);
- const on=d?Math.floor(t/d*N):0;cells.forEach((c,i)=>c.classList.toggle('on',i<on))}
+ const on=d?Math.floor(t/d*N):0;cells.forEach((c,i)=>c.classList.toggle('on',i<on));if(CARD)$('sun').style.left=(d?Math.min(1,t/d)*100:0)+'%'}
 audio.addEventListener('timeupdate',upd);audio.addEventListener('loadedmetadata',upd);
 audio.addEventListener('ended',()=>step(1));
 audio.addEventListener('error',()=>{console.warn('재생 실패:',audio.src);if(order.length>1)setTimeout(()=>step(1),1000)});
