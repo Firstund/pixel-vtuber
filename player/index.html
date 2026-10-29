@@ -1,0 +1,22 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>퇴근여우 음악 플레이어</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css"></head><body>
+<div id="widget" class="widget">
+ <canvas id="fox" width="16" height="16"></canvas>
+ <div class="info">
+  <div class="top"><span class="cat" id="cat">-</span><span class="label">♪ 지금 흐르는 곡</span></div>
+  <div class="marquee" id="mq"><span id="title">불러오는 중…</span></div>
+  <div class="bar" id="bar"></div>
+  <div class="time"><span id="cur">00:00</span><span id="dur">00:00</span></div>
+ </div>
+ <div class="hover" id="hover"><button data-a="prev" title="이전">⏮</button><button data-a="toggle" id="hpp" title="재생/정지">▶</button><button data-a="next" title="다음">⏭</button><button data-a="cat" title="카테고리 변경">🗂</button></div>
+</div>
+<div id="panel" class="panel">
+ <div id="tabs" class="tabs"></div>
+ <ol id="list" class="list"></ol>
+ <div class="ctrl"><button data-a="prev">⏮ 이전</button><button data-a="toggle" id="pp">▶ 재생</button><button data-a="next">⏭ 다음</button>
+ <label><input type="checkbox" id="shuf"> 셔플</label>
+ <label>볼륨 <input type="range" id="vol" min="0" max="1" step="0.05"></label></div>
+ <p class="help">단축키: Space 재생/정지 · →/← 다음/이전 · 1~9 카테고리 · ↑/↓ 볼륨</p>
+</div>
+<div id="start" class="start hidden"><button>▶ 클릭해서 음악 시작</button></div>
+<script src="player.js"></script></body></html>
