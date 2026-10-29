@@ -21,11 +21,14 @@ function render(){const c=cats[ci];$('cat').textContent=c?c.name:'-';
  const l=$('list');l.innerHTML='';if(!c||!c.tracks.length){l.innerHTML='<li class="empty">음악을 추가해 주세요</li>';}
  else c.tracks.forEach((t,i)=>{const li=document.createElement('li');li.textContent=t.title;if(i===ti&&audio.src)li.className='cur';li.onclick=()=>{oi=order.indexOf(i);load(i,true)};l.append(li)});
  $('pp').textContent=playing?'⏸ 일시정지':'▶ 재생';$('hpp').textContent=playing?'⏸':'▶';$('shuf').checked=shuffle;$('vol').value=vol}
+const DEF='cover/fox_cover.png',BLK='cover/fox_cover_blink.png';let covDef=true;
+function setCover(u){const im=$('covimg');covDef=!u;im.src=u?encodeURI(u):DEF;im.onerror=()=>{if(!covDef){covDef=true;im.src=DEF}}}
+if(CARD){setCover();new Image().src=BLK;(function blink(){setTimeout(()=>{const im=$('covimg');if(covDef&&playing){im.src=BLK;setTimeout(()=>{if(covDef)im.src=DEF},150)}blink()},2500+Math.random()*3000)})()}
 function setTitle(t){const mq=$('mq'),s=$('title');s.textContent=t;mq.classList.remove('run');
  requestAnimationFrame(()=>{if(s.scrollWidth>mq.clientWidth){mq.style.setProperty('--d',(s.scrollWidth/40+4)+'s');mq.classList.add('run')}})}
 async function load(i,play){const c=cats[ci];if(!c||!c.tracks.length){audio.pause();audio.removeAttribute('src');playing=false;setTitle('음악을 추가해 주세요');$('dur').textContent='00:00';$('cur').textContent='00:00';upd();render();return}
  if(playing&&!audio.paused)await fade(0,500);
- ti=i;const t=c.tracks[i];const w=$('widget');w.classList.remove('swap');void w.offsetWidth;w.classList.add('swap');
+ ti=i;const t=c.tracks[i];if(CARD)setCover(t.cover||c.cover);const w=$('widget');w.classList.remove('swap');void w.offsetWidth;w.classList.add('swap');
  setTimeout(()=>setTitle(t.title),300);audio.src=encodeURI(t.file);audio.volume=0;render();if(play)await start()}
 async function start(){if(!audio.src)return;try{await audio.play();playing=true;$('start').classList.add('hidden');fade(vol,800)}
  catch(e){playing=false;$('start').classList.remove('hidden')}render()}

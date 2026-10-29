@@ -53,3 +53,9 @@ body.obs .panel{display:none}
 @keyframes tw{50%{opacity:.15}}
 .skin-card .widget.swap .info{animation:fi .3s steps(3)}
 @keyframes fi{from{opacity:0}to{opacity:1}}
+.cover{display:none}
+.skin-card #fox{display:none}
+.skin-card .widget{padding-left:12px;gap:12px}
+.skin-card .cover{display:block;flex:none;width:108px;height:108px;background:#2e1d44;box-shadow:0 0 0 2px var(--c),3px 3px 0 2px #3a2550;overflow:hidden}
+.skin-card .cover img{width:108px;height:108px;display:block;image-rendering:pixelated;object-fit:cover}
+.skin-card .s1{left:auto;right:16px;top:auto;bottom:12px}.skin-card .s2{left:auto;right:150px;top:10px;bottom:auto}
