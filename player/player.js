@@ -43,7 +43,8 @@ function step(d){const n=order.length;if(!n)return;oi=(oi+d+n)%n;if(d>0&&oi===0&
 function setCat(i,play){if(!cats[i])return;ci=i;LS.set('cat',cats[i].id);buildOrder();load(order[0]??0,play??playing)}
 function setVol(v){vol=Math.round(Math.min(1,Math.max(0,v))*100)/100;LS.set('vol',vol);clearInterval(fadeT);if(playing)audio.volume=vol;render()}
 function upd(){const d=audio.duration||0,t=audio.currentTime||0;$('cur').textContent=fmt(t);$('dur').textContent=fmt(d);
- const on=d?Math.floor(t/d*N):0;cells.forEach((c,i)=>c.classList.toggle('on',i<on));if(CARD)$('sun').style.left=(d?Math.min(1,t/d)*100:0)+'%'}
+ const on=d?Math.floor(t/d*N):0;cells.forEach((c,i)=>c.classList.toggle('on',i<on));if(CARD)placeSun(on)}
+function placeSun(on){const c=cells[Math.max(0,Math.min(N,on)-1)],sn=$('sun'),ir=sn.parentNode.getBoundingClientRect(),r=c.getBoundingClientRect();sn.style.left=Math.round(r.left-ir.left+r.width/2-6)+'px';sn.style.top=Math.round(r.top-ir.top+r.height/2-6)+'px'}
 audio.addEventListener('timeupdate',upd);audio.addEventListener('loadedmetadata',upd);
 audio.addEventListener('ended',()=>step(1));
 audio.addEventListener('error',()=>{console.warn('재생 실패:',audio.src);if(order.length>1)setTimeout(()=>step(1),1000)});

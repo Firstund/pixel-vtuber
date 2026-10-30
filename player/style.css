@@ -69,3 +69,6 @@ body.obs .panel{display:none}
 .skin-card .note{display:block;position:absolute;bottom:4px;color:var(--c);font-size:14px;line-height:1;opacity:0;text-shadow:1px 1px 0 #3a2550}
 .skin-card .note.up{animation:nt 1.6s steps(8) forwards}
 @keyframes nt{0%{opacity:0;transform:translateY(0)}20%{opacity:1}80%{opacity:1}100%{opacity:0;transform:translateY(-22px)}}
+
+.skin-card .sun{margin-left:0;transition:none;background:#3a2550;box-shadow:none}
+.skin-card .sun::after{content:"";position:absolute;inset:2px;background:#fff1a8;clip-path:polygon(25% 0,75% 0,75% 25%,100% 25%,100% 75%,75% 75%,75% 100%,25% 100%,25% 75%,0 75%,0 25%,25% 25%)}
