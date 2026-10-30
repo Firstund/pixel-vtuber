@@ -23,7 +23,7 @@ function render(){const c=cats[ci];$('cat').textContent=c?c.name:'-';
  $('pp').textContent=playing?'⏸ 일시정지':'▶ 재생';$('hpp').textContent=playing?'⏸':'▶';$('shuf').checked=shuffle;$('vol').value=vol;coverState()}
 const DEF='cover/fox_cover.png',BLK='cover/fox_cover_blink.png';let covDef=true;
 function setCover(u){const im=$('covimg');covDef=!u;im.src=u?encodeURI(u):DEF;coverState&&setTimeout(coverState);im.onerror=()=>{if(!covDef){covDef=true;im.src=DEF}}}
-const HAP='cover/fox_cover_happy.png';
+const HAP='cover/fox_side_happy.png';
 function coverState(){if(!CARD)return;const L=covDef&&playing,cv=$('cover'),im=$('covimg');cv.classList.toggle('listen',L);
  if(covDef){const w=L?HAP:DEF;if(!im.src.endsWith(w))im.src=w}}
 if(CARD){setCover();[BLK,HAP].forEach(u=>new Image().src=u);
