@@ -5,7 +5,7 @@ const LS={get:k=>{try{return localStorage.getItem('pvp_'+k)}catch(e){}},set:(k,v
 const audio=new Audio();audio.preload='auto';
 let cats=[],ci=0,ti=0,order=[],oi=0,shuffle=P.get('shuffle')==='1';
 let vol=parseFloat(P.get('vol')??LS.get('vol')??'0.6');if(isNaN(vol))vol=0.6;vol=Math.min(1,Math.max(0,vol));
-const CARD=P.get('skin')==='card';if(CARD)document.body.classList.add('skin-card');
+const CARD=P.get('skin')!=='classic';if(CARD)document.body.classList.add('skin-card');
 let fadeT=null,playing=false;const N=CARD?12:30;
 $('bar').innerHTML='<i></i>'.repeat(N);const cells=[...$('bar').children];
 const fmt=s=>{s=Math.floor(s||0);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
