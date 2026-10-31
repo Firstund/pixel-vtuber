@@ -1,7 +1,7 @@
 {
   "categories": [
     { "id": "opening", "name": "출근 도장", "tracks": [
-      { "title": "퇴근길 로파이", "file": "audio/opening/lofi_loop_3min.mp3" }
+      { "title": "문이 열리는 시간", "file": "audio/opening/opening_B_3min_loop.mp3" }
     ]},
     { "id": "chat", "name": "수다 타임", "tracks": [] },
     { "id": "rest", "name": "잠깐 퇴근", "tracks": [
