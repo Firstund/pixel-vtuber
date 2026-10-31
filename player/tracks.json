@@ -7,6 +7,8 @@
     { "id": "rest", "name": "잠깐 퇴근", "tracks": [
       { "title": "잠깐 쉬어가요 로파이", "file": "audio/rest/lofi_rest_3min.mp3" }
     ]},
-    { "id": "ending", "name": "퇴근 완료", "tracks": [] }
+    { "id": "ending", "name": "퇴근 완료", "tracks": [
+      { "title": "판타지에서 집으로", "file": "audio/ending/ending_fantasy_to_reality.mp3" }
+    ]}
   ]
 }
