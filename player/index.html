@@ -11,6 +11,14 @@
  <div class="hover" id="hover"><button data-a="prev" title="이전">⏮</button><button data-a="toggle" id="hpp" title="재생/정지">▶</button><button data-a="next" title="다음">⏭</button><button data-a="cat" title="카테고리 변경">🗂</button></div>
 </div>
 <div id="panel" class="panel">
+ <div id="linkBox" class="linkbox">
+  <div id="linkStatus">단독 재생</div>
+  <label>조작 주소 (크롬)<textarea id="urlControl" readonly rows="2"></textarea></label>
+  <button type="button" id="copyControl">조작 주소 복사</button>
+  <label>OBS 주소 (그림·소리)<textarea id="urlDisplay" readonly rows="2"></textarea></label>
+  <button type="button" id="copyDisplay">OBS 주소 복사</button>
+  <p class="help" id="linkHelp"></p>
+ </div>
  <div id="tabs" class="tabs"></div>
  <ol id="list" class="list"></ol>
  <div class="ctrl"><button data-a="prev">⏮ 이전</button><button data-a="toggle" id="pp">▶ 재생</button><button data-a="next">⏭ 다음</button>
@@ -19,4 +27,5 @@
  <p class="help">단축키: Space 재생/정지 · →/← 다음/이전 · 1~9 카테고리 · ↑/↓ 볼륨</p>
 </div>
 <div id="start" class="start hidden"><button>▶ 클릭해서 음악 시작</button></div>
-<script src="player.js"></script></body></html>
+<div id="obsNote">음악 중계 확인 필요</div>
+<script type="module" src="player.js?v=20261106-link"></script></body></html>

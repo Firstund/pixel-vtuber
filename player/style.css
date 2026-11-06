@@ -28,6 +28,12 @@ button:hover,button.act{background:var(--o);color:var(--p2)}
 .list li{cursor:pointer}.list li.cur{color:var(--o)}.list .empty{color:var(--o2);list-style:none}
 .ctrl{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.help{font-size:13px;color:#cbb}
 body.obs .panel{display:none}
+.linkbox{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.linkbox textarea{width:100%;box-sizing:border-box;height:2.6em;font:11px monospace;background:#1a1024;color:var(--c);border:2px solid var(--c);padding:3px;resize:none;overflow:hidden;overflow-wrap:anywhere}
+#linkStatus.ok{color:#b6f5c2}#linkStatus.bad{color:#ff9ab0}
+body.role-display .ctrl,body.role-display .tabs,body.role-display .list{display:none}
+#obsNote{display:none;position:fixed;left:8px;bottom:8px;z-index:5;background:#2a1b3acc;color:#fff1d6;padding:4px 6px;font-size:12px}
+body.role-display.link-bad #obsNote,body.role-display.audio-blocked #obsNote{display:block}
 .start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0008}
 .start button{font-size:24px;padding:12px 20px}.hidden{display:none}
 /* ---- skin=card (시안) ---- */
