@@ -29,7 +29,7 @@ const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
 import { mic, startMic, micTick, setRemoteMic } from './mic.js?v=20261106-link';
-import { createLink, packBlend, splitPageUrls, wsUrlFromLocation } from './link.js?v=20261106-link';
+import { createLink, packBlend, splitPageUrls, wsUrlFromLocation, DEFAULT_CHAR } from './link.js?v=20261106-fox92';
 import { createTail, tailStep } from './tail.js?v=20261028-v93';
 import { createEars, earStep } from './ears.js?v=20261028-v93';
 const earSt = createEars(); let earLast = 0;
@@ -78,7 +78,8 @@ let ch = null; // {key, base, m, img, S}
 
 // ---------- 캐릭터 로드 ----------
 async function loadChar(key) {
-  const base = CHARS[key] || CHARS.fox91;
+  if (!CHARS[key]) key = DEFAULT_CHAR;
+  const base = CHARS[key];
   const m = await (await fetch(base + 'manifest.json')).json();
   const img = {};
   await Promise.all(m.layers.map(n => new Promise((res, rej) => {
@@ -764,7 +765,7 @@ function setLinkStatus(text, kind) {
   if (badge) badge.textContent = text;
 }
 function refreshLinkUrls() {
-  const urls = splitPageUrls(location, { char: ch?.key || params.get('char') || 'fox93', port: location.port || '8765' });
+  const urls = splitPageUrls(location, { char: ch?.key || params.get('char') || DEFAULT_CHAR, port: location.port || '8765' });
   if ($('urlTrack')) $('urlTrack').value = urls.track;
   if ($('urlDisplay')) $('urlDisplay').value = urls.display;
   window.__linkUrls = urls;
@@ -879,7 +880,7 @@ function loop(t) {
   if (t - fpsT > 1000) { $('fps').textContent = 'FPS: ' + Math.round(frames * 1000 / (t - fpsT)); frames = 0; fpsT = t; }
   requestAnimationFrame(loop);
 }
-await loadChar(params.get('char') && CHARS[params.get('char')] ? params.get('char') : 'fox91');
+await loadChar(params.get('char') && CHARS[params.get('char')] ? params.get('char') : DEFAULT_CHAR);
 $('char').value = ch.key;
 initPageLink();
 requestAnimationFrame(loop);

@@ -36,6 +36,7 @@ BLEND_KEYS = (
 EXPRS = {'auto', 'happy', 'tired', 'surprised', 'smug'}
 REACTS = {'surprise', 'tired', 'flustered', 'wink', 'happy', 'angry'}
 PROPS = {'coffee', 'laptop', 'bag', 'plant'}
+DEFAULT_CHAR = 'fox92'
 CHARS = {
     'fox93', 'fox92', 'fox91', 'fox9', 'fox85', 'fox84', 'fox83', 'fox82', 'fox81',
     'fox8', 'fox71', 'fox7', 'fox65', 'fox64', 'fox63', 'fox62', 'fox61', 'fox6',
@@ -579,8 +580,8 @@ def _urls(port: int) -> str:
     base = f'http://127.0.0.1:{port}'
     return '\n'.join([
         '픽셀 VTuber / 음악 로컬 중계 (127.0.0.1 전용)',
-        f'  추적(크롬):  {base}/?role=track&char=fox93',
-        f'  OBS 표시:   {base}/?role=display&obs=1&char=fox93',
+        f'  추적(크롬):  {base}/?role=track&char={DEFAULT_CHAR}',
+        f'  OBS 표시:   {base}/?role=display&obs=1&char={DEFAULT_CHAR}',
         f'  음악 조작:  {base}/player/?role=control&shuffle=1&vol=0.5',
         f'  음악 OBS:   {base}/player/?role=display&obs=1',
         '카메라 영상과 마이크 소리는 나가지 않습니다. 표정·재생 상태만 전달합니다.',

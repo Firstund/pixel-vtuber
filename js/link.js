@@ -8,6 +8,7 @@ export const BLEND_KEYS = Object.freeze([
 ]);
 
 const LOOPBACK = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
+export const DEFAULT_CHAR = 'fox92';
 
 export function packBlend(b) {
   const o = {};
@@ -65,7 +66,7 @@ export function splitPageUrls(loc, opt = {}) {
   } else {
     root = `http://127.0.0.1:${port}`;
   }
-  const char = encodeURIComponent(opt.char || 'fox93');
+  const char = encodeURIComponent(opt.char || DEFAULT_CHAR);
   return {
     root,
     track: `${root}/?role=track&char=${char}`,

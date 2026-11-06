@@ -4,7 +4,7 @@ import { once } from 'node:events';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
-import { createLink, expectedOffset, outputMode, splitPageUrls, wsUrlFromLocation } from '../js/link.js';
+import { createLink, DEFAULT_CHAR, expectedOffset, outputMode, splitPageUrls, wsUrlFromLocation } from '../js/link.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const tools = path.join(root, 'tools');
@@ -61,11 +61,16 @@ if (process.argv[2] === '--child') {
   setTimeout(() => process.exit(0), 2500);
 } else {
   test('url helpers and single audible decision', () => {
+    assert.equal(DEFAULT_CHAR, 'fox92');
     const pages = splitPageUrls({ hostname: 'firstund.github.io', href: 'https://firstund.github.io/pixel-vtuber/player/?obs=1' });
-    assert.equal(pages.display, 'http://127.0.0.1:8765/?role=display&obs=1&char=fox93');
+    assert.equal(pages.display, 'http://127.0.0.1:8765/?role=display&obs=1&char=fox92');
+    assert.equal(pages.track, 'http://127.0.0.1:8765/?role=track&char=fox92');
     assert.equal(pages.playerDisplay, 'http://127.0.0.1:8765/player/?role=display&obs=1');
     const local = splitPageUrls({ hostname: '127.0.0.1', href: 'http://127.0.0.1:9000/player/?role=control' }, { port: '9000' });
-    assert.equal(local.track, 'http://127.0.0.1:9000/?role=track&char=fox93');
+    assert.equal(local.track, 'http://127.0.0.1:9000/?role=track&char=fox92');
+    const fixed = { hostname: '127.0.0.1', href: 'http://127.0.0.1:8765/' };
+    assert.match(splitPageUrls(fixed, { char: 'fox91' }).display, /char=fox91$/);
+    assert.match(splitPageUrls(fixed, { char: 'fox93' }).track, /char=fox93$/);
     assert.equal(wsUrlFromLocation({ hostname: 'firstund.github.io', protocol: 'https:', host: 'firstund.github.io' }, new URLSearchParams()), '');
     assert.equal(wsUrlFromLocation({ hostname: '127.0.0.1', protocol: 'http:', host: '127.0.0.1:8765' }, new URLSearchParams()), 'ws://127.0.0.1:8765/ws');
     assert.equal(outputMode({ role: '', youAudible: false }), 'local');

@@ -26,8 +26,10 @@ py -3 tools\vtuber_relay.py
 2. OBS → 소스 추가 → 브라우저. 너비 1280, 높이 720. 아래 표시 주소를 넣습니다.
 3. 추적 창의 「OBS 주소 복사」를 써도 됩니다.
 
-- 추적: `http://127.0.0.1:8765/?role=track&char=fox93`
-- OBS: `http://127.0.0.1:8765/?role=display&obs=1&char=fox93`
+- 추적: `http://127.0.0.1:8765/?role=track&char=fox92`
+- OBS: `http://127.0.0.1:8765/?role=display&obs=1&char=fox92`
+
+`char`를 빼면 V9.2(fox92)입니다. `char=fox91`과 `char=fox93`은 그대로 고를 수 있습니다.
 
 `?role=display` 페이지는 `getUserMedia`를 호출하지 않습니다. 예전 주소(`?obs=1`만, 역할 없음)는 OBS가 카메라를 직접 여는 방식이라 대부분 실패합니다.
 
