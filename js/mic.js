@@ -1,5 +1,12 @@
 // 마이크 기반 신남(excitement) 감지: 음량(최근 ~10초 기준 자동 보정) + 음높이(본인 중앙값 대비) + 에너지 변동
-export const mic = { on: false, score: 0, raw: 0, db: -100, f0: 0, med: 192, floor: -60, err: '' };
+export const mic = { on: false, score: 0, raw: 0, db: -100, f0: 0, med: 192, floor: -60, err: '', remote: false };
+
+export function setRemoteMic(on, score) {
+  mic.remote = true;
+  mic.on = !!on;
+  mic.score = on ? Math.max(0, Math.min(1, Number(score) || 0)) : 0;
+  mic.err = '';
+}
 let ac, an, buf, hist = [], vhist = [], f0s = [], lastT = 0, lastF0T = 0; // f0 중앙값: 0.1초마다 1개, 최근 ~40초
 const clamp = v => Math.max(0, Math.min(1, v));
 const pct = (a, q) => { if (!a.length) return 0; const s = [...a].sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.floor(q * s.length))]; };
@@ -34,6 +41,7 @@ function autocorrF0(x, sr) {
 
 // 매 프레임 호출. sens: 0.5~2
 export function micTick(t, sens = 1) {
+  if (mic.remote) return mic.score;
   if (!mic.on) { mic.score = 0; return 0; }
   const dt = Math.min(1000, t - (lastT || t)); lastT = t;
   an.getFloatTimeDomainData(buf);

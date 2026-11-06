@@ -4,11 +4,32 @@ const MP_URL = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VER}`;
 const MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
+const pageRole = params.get('role') || '';
+const isDisplay = pageRole === 'display';
+const isTrack = pageRole === 'track';
+document.documentElement.dataset.role = pageRole || 'standalone';
+document.body.classList.add(isDisplay ? 'role-display' : isTrack ? 'role-track' : 'role-standalone');
+if (isDisplay) document.title = '픽셀 VTuber 표시';
+if (isTrack) document.title = '픽셀 VTuber 추적';
+window.__mediaRequests = 0;
+{
+  const md = navigator.mediaDevices;
+  if (md?.getUserMedia && !md.__pvWrapped) {
+    const orig = md.getUserMedia.bind(md);
+    md.getUserMedia = (constraints) => {
+      if (isDisplay) return Promise.reject(new DOMException('표시 전용 페이지는 카메라·마이크를 열지 않습니다.', 'NotAllowedError'));
+      window.__mediaRequests += 1;
+      return orig(constraints);
+    };
+    md.__pvWrapped = true;
+  }
+}
 const canvas = $('c'), ctx = canvas.getContext('2d');
 const video = $('video');
 const off = document.createElement('canvas'), octx = off.getContext('2d');      // 원본 해상도 합성
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
-import { mic, startMic, micTick } from './mic.js?v=20261028-v93';
+import { mic, startMic, micTick, setRemoteMic } from './mic.js?v=20261106-link';
+import { createLink, packBlend, splitPageUrls, wsUrlFromLocation } from './link.js?v=20261106-link';
 import { createTail, tailStep } from './tail.js?v=20261028-v93';
 import { createEars, earStep } from './ears.js?v=20261028-v93';
 const earSt = createEars(); let earLast = 0;
@@ -68,6 +89,7 @@ async function loadChar(key) {
   octx.imageSmoothingEnabled = hctx.imageSmoothingEnabled = false;
   resize();
   window.__char = key;
+if (window.__refreshLinkUrls) window.__refreshLinkUrls();
   const rb = document.getElementById('react'); if (rb) rb.hidden = !m.reactions;
   if (typeof RX !== 'undefined') { RX.manual = RX.auto = null; }
 }
@@ -113,6 +135,7 @@ for (const id of ['autoBlink', 'breath']) {
 cfg.choppy = $('choppy').checked; $('choppy').onchange = e => { cfg.choppy = e.target.checked; };
 cfg.micExpr = $('micExpr').checked; $('micExpr').onchange = e => { cfg.micExpr = e.target.checked; };
 $('micBtn').onclick = async () => {
+  if (isDisplay) return;
   $('micBtn').disabled = true; showErr('');
   if (await startMic()) { $('micBtn').textContent = '🎤 마이크 켜짐'; $('meter').hidden = false; }
   else { showErr(mic.err); $('micBtn').disabled = false; }
@@ -180,6 +203,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') document.body.classList.remove('obs');
   if (e.target && e.target.closest && e.target.closest('input,textarea,select,[contenteditable]')) return; // 입력 중엔 단축키 무시
   if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (isDisplay) return; // 표정·리액션의 기준은 추적 창. OBS 표시 창은 수신만 한다.
   if (ch && ch.m.reactions) { // v9.3: 1~6 리액션, 0/` 해제
     const r = REACT_KEYS[e.key]; if (r !== undefined) { react(r); e.preventDefault(); return; }
   }
@@ -592,6 +616,7 @@ function autoBlink(t) {
 
 // ---------- 얼굴 추적 ----------
 let landmarker = null, mode = 'idle', lastVideoTime = -1, faceSeen = 0;
+let link = null, remoteV = null, remoteAt = 0, linkDisplays = 0, pubAt = 0, pubSeq = 0;
 const zero = { stretch: 0, smileAsym: 0, puff: 0, squint: 0, jaw: 0, funnel: 0, smile: 0, blink: 0, brow: 0, wide: 0, yaw: 0, pitch: 0, roll: 0 };
 let latest = { ...zero };
 async function loadModel() {
@@ -631,6 +656,7 @@ function readResult(r) {
   return out;
 }
 async function startCamera() {
+  if (isDisplay) { showErr('표시 전용 페이지는 카메라를 열지 않습니다. 추적 주소를 크롬에서 여세요.'); return; }
   showErr('');
   if (!navigator.mediaDevices?.getUserMedia) { showErr('이 브라우저는 카메라를 지원하지 않거나 HTTPS가 아닙니다. HTTPS 주소로 접속해 주세요.'); return; }
   try {
@@ -639,6 +665,7 @@ async function startCamera() {
     video.srcObject = stream; await video.play();
     if (!landmarker) await loadModel();
     mode = 'camera'; status(`추적 중 (${window.__delegate})`); $('start').textContent = '카메라 실행 중';
+    if (isTrack) keepAwake();
   } catch (e) {
     console.warn(e);
     const n = e && e.name;
@@ -672,18 +699,178 @@ function demoValues(t) {
 // ---------- 루프 ----------
 let frames = 0, fpsT = performance.now();
 window.__frames = 0;
+function cfgSnap() {
+  return {
+    char: ch?.key, mirror: !!cfg.mirror, choppy: !!cfg.choppy, animFps: cfg.animFps,
+    tMouth: cfg.tMouth, tBlink: cfg.tBlink, tSmile: cfg.tSmile, smooth: cfg.smooth,
+    micExpr: !!cfg.micExpr, autoBlink: !!cfg.autoBlink, breath: !!cfg.breath,
+    props: (window.__PS?.props || []).slice(),
+  };
+}
+function publishVtuber(t, sample, face) {
+  if (!isTrack || !link?.connected) return;
+  if (t - pubAt < 33) return;
+  pubAt = t;
+  link.send({
+    type: 'state', room: 'vtuber',
+    payload: {
+      kind: 'vtuber', seq: ++pubSeq, face: !!face, b: packBlend(sample || zero),
+      micOn: !!(mic.on && !mic.remote), micScore: mic.score || 0,
+      expr: exprOverride, react: RX.manual || null, cfg: cfgSnap(),
+    },
+  });
+}
+let cfgJson = '';
+function applyRemoteCfg(c) {
+  if (!c || !isDisplay) return;
+  const j = JSON.stringify(c);
+  if (j === cfgJson) return;
+  cfgJson = j;
+  const setChk = (id, v) => { if (typeof v !== 'boolean') return; const el = $(id); if (el) el.checked = v; cfg[id] = v; };
+  const setRange = (id, v) => {
+    if (!Number.isFinite(+v)) return;
+    const el = $(id); if (!el) return;
+    if (Math.abs(parseFloat(el.value) - (+v)) > 1e-6) { el.value = v; if (el.nextElementSibling) el.nextElementSibling.textContent = el.value; }
+    cfg[id] = parseFloat(el.value);
+  };
+  setChk('mirror', c.mirror); setChk('choppy', c.choppy); setChk('micExpr', c.micExpr);
+  setChk('autoBlink', c.autoBlink); setChk('breath', c.breath);
+  setRange('animFps', c.animFps); setRange('tMouth', c.tMouth); setRange('tBlink', c.tBlink);
+  setRange('tSmile', c.tSmile); setRange('smooth', c.smooth);
+  if (Array.isArray(c.props)) {
+    PS.props = c.props.filter(k => k in PROPS);
+    document.querySelectorAll('#props button').forEach(b => b.classList.toggle('on', PS.props.includes(b.dataset.p)));
+  }
+  if (c.char && CHARS[c.char] && ch && c.char !== ch.key) {
+    $('char').value = c.char;
+    loadChar(c.char).catch(e => console.warn('char sync', e));
+  }
+}
+function onVtuberState(p) {
+  if (!p || p.kind !== 'vtuber') return;
+  remoteV = p; remoteAt = performance.now();
+  if (p.expr && p.expr !== exprOverride) setExpr(p.expr);
+  if ('react' in p) {
+    const name = p.react || null;
+    if (name !== (RX.manual || null)) react(name);
+    else if (name) RX.until = performance.now() + 900;
+  }
+  if (p.cfg) applyRemoteCfg(p.cfg);
+}
+function setLinkStatus(text, kind) {
+  const el = $('linkStatus');
+  if (el) { el.textContent = text; el.className = kind || ''; }
+  const badge = $('linkBadge');
+  if (badge) badge.textContent = text;
+}
+function refreshLinkUrls() {
+  const urls = splitPageUrls(location, { char: ch?.key || params.get('char') || 'fox93', port: location.port || '8765' });
+  if ($('urlTrack')) $('urlTrack').value = urls.track;
+  if ($('urlDisplay')) $('urlDisplay').value = urls.display;
+  window.__linkUrls = urls;
+  return urls;
+}
+async function copyField(id, okText) {
+  const text = $(id)?.value || '';
+  const msg = $('obsMsg'); const help = $('linkHelp');
+  try {
+    await navigator.clipboard.writeText(text);
+    if (help) help.textContent = okText;
+    if (msg) { msg.hidden = false; msg.textContent = okText + ' ' + text; }
+  } catch {
+    if (help) help.textContent = text;
+    if (msg) { msg.hidden = false; msg.textContent = text; }
+  }
+}
+function keepAwake() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx || window.__keepAwake) return;
+    const ac = new Ctx();
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    gain.gain.value = 0;
+    osc.connect(gain); gain.connect(ac.destination); osc.start();
+    window.__keepAwake = true;
+  } catch { /* 탭 절전 완화는 실패해도 추적은 계속 */ }
+}
+function initPageLink() {
+  const urls = refreshLinkUrls();
+  const help = $('linkHelp');
+  const local = ['127.0.0.1', 'localhost', '::1'].includes(location.hostname);
+  const steps = '순서: ① start-vtuber.bat 또는 py -3 tools/vtuber_relay.py ② 크롬에서 추적 주소 → 카메라 시작 ③ OBS 브라우저 소스에 OBS 주소. 영상·소리는 전송되지 않습니다. 추적 창은 최소화하지 마세요.';
+  if (help) help.textContent = local ? steps : '이 페이지(GitHub Pages 등)에서는 브라우저가 ws://127.0.0.1 접속을 막습니다. 분리 모드는 127.0.0.1 주소만 사용하세요. 카메라만 쓰는 기존 방식은 이 주소에서도 그대로입니다. ' + steps;
+  $('copyTrack') && ($('copyTrack').onclick = () => copyField('urlTrack', '추적 주소를 복사했습니다.'));
+  $('copyDisplay') && ($('copyDisplay').onclick = () => copyField('urlDisplay', 'OBS 주소를 복사했습니다. 브라우저 소스에 붙여넣으세요.'));
+  $('obsCopy') && ($('obsCopy').onclick = () => copyField('urlDisplay', 'OBS 주소를 복사했습니다. 브라우저 소스에 붙여넣으세요.'));
+  $('obsCopyLegacy') && ($('obsCopyLegacy').onclick = async () => {
+    const text = typeof obsUrl === 'function' ? obsUrl() : urls.legacy;
+    try { await navigator.clipboard.writeText(text); if (help) help.textContent = '예전 주소입니다. OBS가 카메라를 직접 여므로 대부분 실패합니다. ' + text; }
+    catch { if (help) help.textContent = text; }
+  });
+  window.__refreshLinkUrls = refreshLinkUrls;
+  if (!isTrack && !isDisplay) {
+    setLinkStatus('단독 모드 (이 창에서 카메라)', 'ok');
+    document.body.classList.add('link-ok');
+    return;
+  }
+  const ws = wsUrlFromLocation(location, params);
+  if (!ws) {
+    setLinkStatus('로컬 중계 주소가 아닙니다', 'bad');
+    document.body.classList.add('link-bad');
+    return;
+  }
+  link = createLink({
+    url: ws,
+    role: isDisplay ? 'display' : 'track',
+    room: 'vtuber',
+    onStatus(s) {
+      document.documentElement.dataset.link = s.state;
+      if (s.state === 'open') {
+        document.body.classList.add('link-ok');
+        document.body.classList.remove('link-bad');
+        setLinkStatus(isDisplay ? '중계 연결됨 · 표정 대기' : `중계 연결됨 · OBS ${linkDisplays}`, 'ok');
+      } else if (s.state === 'closed') {
+        document.body.classList.add('link-bad');
+        document.body.classList.remove('link-ok');
+        setLinkStatus('중계 끊김 · 재연결 중…', 'bad');
+        if (isDisplay) remoteV = null;
+      } else setLinkStatus('중계 연결 중…', '');
+    },
+    onMessage(msg) {
+      if (msg.type === 'peers') {
+        linkDisplays = msg.roles?.display || 0;
+        window.__peers = msg;
+        if (document.documentElement.dataset.link === 'open' && isTrack) setLinkStatus(`중계 연결됨 · OBS ${linkDisplays}`, 'ok');
+      }
+      if (msg.type === 'state' && isDisplay) onVtuberState(msg.payload);
+    },
+  });
+  window.__link = link;
+}
 function loop(t) {
   let b = latest, auto = 0;
-  if (mode === 'camera' && landmarker && video.readyState >= 2 && video.currentTime !== lastVideoTime) {
-    lastVideoTime = video.currentTime;
-    const r = readResult(landmarker.detectForVideo(video, t));
-    if (r) { latest = r; faceSeen = t; }
+  if (isDisplay) {
+    const fresh = remoteV && (t - remoteAt < 1200);
+    if (fresh && remoteV.face && remoteV.b) b = remoteV.b;
+    else { b = { ...zero }; auto = autoBlink(t); }
+    setRemoteMic(!!(fresh && remoteV && remoteV.micOn), fresh && remoteV ? remoteV.micScore : 0);
+    if (!fresh) status(document.body.classList.contains('link-ok') ? '신호 대기…' : '중계 재연결 중…');
+    else status(remoteV.face ? '표정 수신 중' : '연결됨 · 얼굴 없음');
+  } else {
+    if (mode === 'camera' && landmarker && video.readyState >= 2 && video.currentTime !== lastVideoTime) {
+      lastVideoTime = video.currentTime;
+      const r = readResult(landmarker.detectForVideo(video, t));
+      if (r) { latest = r; faceSeen = t; }
+    }
+    if (mode === 'sim') { b = latest; }
+    else if (mode === 'demo') { b = demoValues(t); if (!(b.blink > 0)) auto = autoBlink(t); }
+    else if (mode !== 'camera' || t - faceSeen > 1000) { b = { ...zero }; auto = autoBlink(t); if (mode === 'camera') status('얼굴을 찾는 중…'); }
+    else if (mode === 'camera') status(`추적 중 (${window.__delegate})`);
+    micTick(t, cfg.micSens);
+    const faceLive = mode === 'demo' || mode === 'sim' || (mode === 'camera' && t - faceSeen <= 1000);
+    publishVtuber(t, faceLive ? b : zero, faceLive);
   }
-  if (mode === 'sim') { b = latest; }
-  else if (mode === 'demo') { b = demoValues(t); if (!(b.blink > 0)) auto = autoBlink(t); }
-  else if (mode !== 'camera' || t - faceSeen > 1000) { b = { ...zero }; auto = autoBlink(t); if (mode === 'camera') status('얼굴을 찾는 중…'); }
-  else if (mode === 'camera') status(`추적 중 (${window.__delegate})`);
-  micTick(t, cfg.micSens);
   decide(b, auto, t);
   draw(t);
   frames++; window.__frames++;
@@ -694,10 +881,11 @@ function loop(t) {
 }
 await loadChar(params.get('char') && CHARS[params.get('char')] ? params.get('char') : 'fox91');
 $('char').value = ch.key;
+initPageLink();
 requestAnimationFrame(loop);
 // 테스트용: 가짜 MediaPipe 결과를 실제 readResult 경로로 주입
 function simResult(r) { mode = 'sim'; latest = readResult(r); }
-window.__app = { mic, exc, st, pose, cfg, startCamera, loadModel, loadChar, setExpr, simResult, react, RX };
+window.__app = { mic, exc, st, pose, cfg, startCamera, loadModel, loadChar, setExpr, simResult, react, RX, isDisplay, isTrack, role: pageRole };
 
 // ---------- 스프라이트 시트 다운로드 (store-only zip, no deps) ----------
 const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();

@@ -1,6 +1,6 @@
 <!doctype html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>픽셀 VTuber — 퇴근여우</title><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css?v=20261028-v93"></head><body>
+<title>픽셀 VTuber — 퇴근여우</title><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css?v=20261106-link"></head><body>
 <div id="stage"><canvas id="c" width="96" height="96"></canvas></div>
 <div id="hud"><span id="fps">FPS: -</span> <span id="status">대기 중</span> <span id="pose"></span><div id="meter" hidden>신남 <span class="track"><span id="meterBar"></span></span></div></div>
 <video id="video" playsinline muted autoplay></video>
@@ -11,6 +11,16 @@
  <button id="demo">데모 모드</button>
  <button id="micBtn">🎤 마이크 켜기</button>
  <div id="err" hidden></div>
+ <div id="linkBox">
+  <div class="hint">OBS 분리 — 크롬이 얼굴·마이크를 보고, OBS는 그림만 받습니다</div>
+  <div id="linkStatus">확인 중…</div>
+  <label>추적 주소 (크롬)<textarea id="urlTrack" readonly rows="2"></textarea></label>
+  <button type="button" id="copyTrack">추적 주소 복사</button>
+  <label>OBS 주소 (투명 · 카메라 없음)<textarea id="urlDisplay" readonly rows="2"></textarea></label>
+  <button type="button" id="copyDisplay">OBS 주소 복사</button>
+  <button type="button" id="obsCopyLegacy">예전 주소 (OBS가 직접 카메라)</button>
+  <p class="hint" id="linkHelp"></p>
+ </div>
  <div id="expr" class="row"><button data-e="auto" class="on">자동</button><button data-e="happy">웃음</button><button data-e="tired">피곤</button><button data-e="surprised">놀람</button><button data-e="smug">의기양양</button></div>
  <div id="react" class="row" title="V9.3 리액션 (키 1~6, 0 해제)"></div>
  <div class="hint">소품 (눌러서 켜기/끄기)</div>
@@ -35,10 +45,11 @@
  <label>맞춤 <select id="bgFit"><option value="cover">화면 채우기 (잘림)</option><option value="contain">전체 보이기 (여백)</option></select> <button id="bgDel">배경 이미지 지우기</button></label>
  <label><input type="checkbox" id="transp"> 투명 배경 (OBS용)</label>
  <button id="clean">클린 뷰 (OBS용)</button>
+ <div id="linkBadge">중계 끊김</div>
  <button id="obsMode">OBS 모드 (캐릭터만 · 투명)</button>
- <button id="obsCopy">📋 OBS 브라우저 소스 주소 복사</button>
+ <button id="obsCopy">📋 OBS 표시 주소 복사</button>
  <div id="obsMsg" class="hint" hidden></div>
  <button id="dlSprites">📦 스프라이트 시트 다운로드</button> <span id="dlMsg" class="hint" hidden></span>
  <p class="hint">단축키: 1 자동 · 2 웃음 · 3 피곤 · 4 놀람 · 5 의기양양 · h 클린 뷰 · Esc/더블탭 해제</p>
 </div>
-<script type="module" src="js/app.js?v=20261028-v93"></script></body></html>
+<script type="module" src="js/app.js?v=20261106-link"></script></body></html>
