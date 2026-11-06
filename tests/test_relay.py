@@ -36,6 +36,31 @@ def player_payload(**over):
     return base
 
 
+class DefaultCharTests(unittest.TestCase):
+    def test_default_is_fox92_and_explicit_ids_remain(self):
+        self.assertEqual(relay.DEFAULT_CHAR, 'fox92')
+        text = relay._urls(8765)
+        self.assertIn('/?role=track&char=fox92', text)
+        self.assertIn('/?role=display&obs=1&char=fox92', text)
+        self.assertNotIn('char=fox91', text)
+        self.assertNotIn('char=fox93', text)
+        for key in ('fox91', 'fox92', 'fox93'):
+            self.assertIn(key, relay.CHARS)
+            manifest = json.loads((ROOT / 'assets' / key / 'manifest.json').read_text())
+            self.assertEqual(manifest['mode'], 'face')
+            self.assertTrue(manifest['layers'])
+        html = (ROOT / 'index.html').read_text()
+        self.assertIn('value="fox92" selected', html)
+        self.assertNotIn('value="fox91" selected', html)
+        self.assertIn('value="fox91"', html)
+        self.assertIn('value="fox93"', html)
+        app = (ROOT / 'js/app.js').read_text()
+        self.assertIn('DEFAULT_CHAR', app)
+        self.assertNotIn('CHARS.fox91', app)
+        self.assertIn("fox91: 'assets/fox91/'", app)
+        self.assertIn("fox93: 'assets/fox93/'", app)
+
+
 class SanitizeTests(unittest.TestCase):
     def test_strips_frames_and_audio_blobs(self):
         raw = vtuber_payload(b={'jaw': 0.42, 'yaw': 33})

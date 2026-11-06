@@ -128,15 +128,22 @@ test('display page takes no camera and follows the other browser', { timeout: 12
   await a.send('Page.enable');
   await b.send('Page.enable');
   try {
-    await b.send('Page.navigate', { url: `${base}/?role=track&char=fox93` });
-    await waitFor(b, `document.getElementById('urlDisplay') && document.getElementById('urlDisplay').value.includes('role=display')`);
+    await b.send('Page.navigate', { url: `${base}/?role=track` });
+    await waitFor(b, `window.__char === 'fox92' && document.getElementById('char').value === 'fox92'`);
     const trackUrl = await evaljs(b, `document.getElementById('urlTrack').value`);
     const displayUrl = await evaljs(b, `document.getElementById('urlDisplay').value`);
-    assert.match(trackUrl, /127\.0\.0\.1/);
+    assert.match(trackUrl, /char=fox92/);
     assert.match(displayUrl, /role=display/);
     assert.match(displayUrl, /obs=1/);
+    assert.match(displayUrl, /char=fox92/);
     await shot(b, 'vtuber-track-panel.png');
 
+    await a.send('Page.navigate', { url: `${base}/?role=display&obs=1` });
+    await waitFor(a, `window.__char === 'fox92'`);
+    const pixels92 = await evaljs(a, `(() => { const c = document.getElementById('c'); const d = c.getContext('2d').getImageData(0,0,c.width,c.height).data; let n=0; for (let i=3;i<d.length;i+=4) if (d[i]>0) n++; return n; })()`);
+    assert.ok(pixels92 > 50, 'fox92 pixels ' + pixels92);
+    await a.send('Page.navigate', { url: `${base}/?role=display&obs=1&char=fox91` });
+    await waitFor(a, `window.__char === 'fox91'`);
     await a.send('Page.navigate', { url: `${base}/?role=display&obs=1&char=fox93` });
     await waitFor(a, `window.__app && window.__char === 'fox93'`);
     const media = await evaljs(a, `(async () => {
