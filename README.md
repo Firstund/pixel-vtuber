@@ -10,6 +10,8 @@ OBS 브라우저 소스와 크롬은 **서로 다른 프로그램**입니다. `l
 start-vtuber.bat
 ```
 
+이 파일은 영문과 Windows 줄바꿈(CRLF)만 사용합니다. 한글이 들어 있던 예전 bat은 `echo`를 명령으로 찾지 못하고 멈춥니다. 그때는 23MB ZIP을 다시 받지 말고 `start-vtuber.bat` 파일만 바꾸면 됩니다.
+
 또는 프로젝트 폴더에서:
 
 ```bat

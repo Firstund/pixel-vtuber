@@ -1,16 +1,40 @@
 @echo off
-chcp 65001 >nul
+setlocal
 cd /d "%~dp0"
-echo 픽셀 VTuber / 음악 플레이어 로컬 중계
-echo 카메라 영상과 마이크 소리는 전송하지 않습니다.
+
 where py >nul 2>&1
-if %errorlevel%==0 (
-  py -3 tools\vtuber_relay.py
-  if errorlevel 1 pause
-  goto :eof
-)
-python tools\vtuber_relay.py
-if errorlevel 1 (
-  echo Python 3 이 필요합니다. https://www.python.org/ 에서 설치한 뒤 다시 실행하세요.
-  pause
-)
+if not errorlevel 1 goto run_py
+where python >nul 2>&1
+if not errorlevel 1 goto run_python
+goto missing
+
+:run_py
+py -3 "%~dp0tools\vtuber_relay.py"
+if not errorlevel 1 exit /b 0
+goto failed
+
+:run_python
+python "%~dp0tools\vtuber_relay.py"
+if not errorlevel 1 exit /b 0
+goto failed
+
+:missing
+echo Python 3 was not found.
+echo Install Python 3 from https://www.python.org/downloads/
+echo Turn on Add python.exe to PATH in the installer.
+echo Then double-click start-vtuber.bat again.
+echo.
+echo Or open cmd in this folder and run:
+echo   py -3 tools\vtuber_relay.py
+echo   python tools\vtuber_relay.py
+pause
+exit /b 1
+
+:failed
+echo.
+echo The relay did not stay running.
+echo Open cmd in this folder and run:
+echo   py -3 tools\vtuber_relay.py
+echo   python tools\vtuber_relay.py
+pause
+exit /b 1
