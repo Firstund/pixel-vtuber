@@ -104,7 +104,9 @@ async function loadChar(key) {
   const note = $('rigNote');
   if (note) {
     note.hidden = m.mode !== 'fine';
-    if (m.mode === 'fine') note.textContent = '남성 시안 512. 눈·눈썹·입은 분리된 그림이 아니라 원본 초상을 조금만 변형합니다. 중립이면 원본과 같습니다. 입은 이가 그려져 있지 않아 크게 벌리지 않습니다. 고개 회전 숫자는 전달되지만 몸 그림은 정면입니다. 여우 기본은 V9.2입니다.';
+    if (m.mode === 'fine') note.textContent = m.artRevision === 'v1-superseded'
+      ? '이 얼굴은 v1이라 폐기 예정입니다. 목표 외형은 20대 초반의 섬세한 미형이고, 새 원본이 오면 그림만 바꿉니다. 추적과 중계는 유지됩니다. 여우 기본은 V9.2입니다.'
+      : '남성 시안 512. 중립이면 원본과 같습니다. 여우 기본은 V9.2입니다.';
   }
   if (window.__refreshLinkUrls) window.__refreshLinkUrls();
   const lab = $('rigDebugLabel'); if (lab) lab.hidden = m.mode !== 'fine';

@@ -1,5 +1,6 @@
 {
-  "name": "남성 시안 512 (납작한 원본)",
+  "name": "남성 시안 v1 (외형 폐기 예정)",
+  "artRevision": "v1-superseded",
   "S": 512,
   "mode": "fine",
   "art": "portrait",
@@ -33,5 +34,5 @@
     "mouthDead": 0.035,
     "eyelidDead": 0.06
   },
-  "note": "512 neutral is the supplied original, twice a 256 fox frame. It is one flattened painting. Eye, brow, and mouth are not separate layers. Motion is a local warp that copies the source unchanged when the face is neutral. A closed mouth cannot grow teeth. Full head turns are tracked as numbers and are not painted."
+  "note": "v1 art is superseded. The face reads middle-aged (heavy brow, jaw, stubble) and is not the target. Target is an adult early-20s decadent bishounen: delicate anime/JRPG pixel, no rugged jaw, stubble, or heavy brow. Keep this file only so the continuous tracker and relay can be swapped when v2 art arrives. Region boxes belong to v1 and must be retuned for v2. Do not extract layers from v1."
 }
