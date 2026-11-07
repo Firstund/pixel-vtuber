@@ -38,7 +38,7 @@ REACTS = {'surprise', 'tired', 'flustered', 'wink', 'happy', 'angry'}
 PROPS = {'coffee', 'laptop', 'bag', 'plant'}
 DEFAULT_CHAR = 'fox92'
 CHARS = {
-    'fox93', 'fox92', 'fox91', 'fox9', 'fox85', 'fox84', 'fox83', 'fox82', 'fox81',
+    'male1', 'fox93', 'fox92', 'fox91', 'fox9', 'fox85', 'fox84', 'fox83', 'fox82', 'fox81',
     'fox8', 'fox71', 'fox7', 'fox65', 'fox64', 'fox63', 'fox62', 'fox61', 'fox6',
     'fox53', 'fox52', 'fox51', 'fox5', 'fox4', 'fox3', 'fox2', 'test',
 }
@@ -177,6 +177,32 @@ def _sanitize_vtuber(p):
     }
     if cfg is not None:
         out['cfg'] = cfg
+    if p.get('fine') is not None:
+        fine = _sanitize_fine(p.get('fine'))
+        if fine:
+            out['fine'] = fine
+    return out
+
+
+FINE_FIELDS = {
+    'jaw': (0, 1), 'smile': (0, 1), 'frown': (0, 1), 'funnel': (0, 1),
+    'openL': (0, 1), 'openR': (0, 1), 'gx': (-1, 1), 'gy': (-1, 1),
+    'browIn': (0, 1), 'browOut': (0, 1), 'browDown': (0, 1),
+    'yaw': (-90, 90), 'pitch': (-90, 90), 'roll': (-90, 90),
+}
+
+
+def _sanitize_fine(fine):
+    if not isinstance(fine, dict):
+        return None
+    out = {}
+    for key, (lo, hi) in FINE_FIELDS.items():
+        n = _num(fine.get(key, 0), lo, hi)
+        if n is None:
+            return None
+        out[key] = round(n, 3)
+    wink = fine.get('wink') or 'none'
+    out['wink'] = wink if wink in ('none', 'L', 'R') else 'none'
     return out
 
 

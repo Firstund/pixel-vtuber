@@ -1,6 +1,7 @@
 """Relay tests: separate processes, rooms, one audible player, late join, reconnect."""
 import json
 import os
+import struct
 import subprocess
 import sys
 import textwrap
@@ -60,8 +61,51 @@ class DefaultCharTests(unittest.TestCase):
         self.assertIn("fox91: 'assets/fox91/'", app)
         self.assertIn("fox93: 'assets/fox93/'", app)
 
+    def test_resolutions(self):
+        def wh(path):
+            blob = (ROOT / path).read_bytes()
+            return struct.unpack('>II', blob[16:24])
+        self.assertEqual(wh('assets/fox92/base.png')[0], 256)
+        self.assertEqual(wh('assets/male1/neutral.png'), (512, 512))
+        self.assertEqual(wh('assets/male1/source-1024.png'), (1024, 1024))
+        # Neutral warp of the real painting must be byte-identical.
+        script = r'''
+import { readFileSync } from "node:fs";
+import { warpPortrait, buffersEqual } from "./js/portrait-warp.js";
+const src = new Uint8ClampedArray(readFileSync("/tmp/male-neutral.rgba"));
+const regions = JSON.parse(readFileSync("assets/male1/manifest.json","utf8")).regions;
+const limits = JSON.parse(readFileSync("assets/male1/manifest.json","utf8")).track;
+const neutral = { openL:1, openR:1, gx:0, gy:0, jaw:0, smile:0, frown:0, browOut:0, browDown:0 };
+const out = warpPortrait(src, 512, 512, regions, neutral, limits);
+if (!buffersEqual(src, out)) process.exit(2);
+'''
+        try:
+            from PIL import Image
+        except ImportError:
+            self.skipTest('Pillow is not installed')
+        raw = Image.open(ROOT / 'assets/male1/neutral.png').convert('RGBA').tobytes()
+        rgba = Path('/tmp/male-neutral.rgba')
+        rgba.write_bytes(raw)
+        run = subprocess.run(['node', '--input-type=module', '-e', script], cwd=ROOT)
+        self.assertEqual(run.returncode, 0)
+
 
 class SanitizeTests(unittest.TestCase):
+    def test_fine_state_is_optional_and_stripped(self):
+        old = vtuber_payload()
+        clean = relay.sanitize_state('vtuber', old)
+        self.assertNotIn('fine', clean)
+        self.assertEqual(set(clean['b']), set(relay.BLEND_KEYS))
+        raw = vtuber_payload()
+        raw['fine'] = {'jaw': 0.42, 'openL': 0.15, 'openR': 0.9, 'wink': 'L', 'yaw': 12.2, 'gx': 0.4, 'image': 'nope'}
+        fine = relay.sanitize_state('vtuber', raw)['fine']
+        self.assertEqual(fine['jaw'], 0.42)
+        self.assertEqual(fine['wink'], 'L')
+        self.assertEqual(fine['yaw'], 12.2)
+        self.assertNotIn('image', fine)
+        self.assertIn('male1', relay.CHARS)
+        self.assertEqual(relay.DEFAULT_CHAR, 'fox92')
+
     def test_strips_frames_and_audio_blobs(self):
         raw = vtuber_payload(b={'jaw': 0.42, 'yaw': 33})
         raw['image'] = 'a' * 5000

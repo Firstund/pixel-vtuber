@@ -1,0 +1,37 @@
+{
+  "name": "남성 시안 512 (납작한 원본)",
+  "S": 512,
+  "mode": "fine",
+  "art": "portrait",
+  "texture": "neutral.png",
+  "source": "source-1024.png",
+  "layers": [],
+  "regions": {
+    "eyeL": [186, 152, 248, 190],
+    "eyeR": [270, 152, 334, 190],
+    "browL": [180, 128, 252, 158],
+    "browR": [266, 128, 340, 158],
+    "mouth": [210, 246, 308, 282]
+  },
+  "track": {
+    "S": 512,
+    "yawSteps": 9,
+    "pitchSteps": 5,
+    "rollSteps": 5,
+    "eyelidSteps": 5,
+    "mouthSteps": 8,
+    "browSteps": 5,
+    "gazePx": 3,
+    "blinkCompress": 0.55,
+    "mouthScale": 0.18,
+    "browPx": 3,
+    "smilePx": 2,
+    "poseHoldMs": 40,
+    "yawDead": 1.2,
+    "pitchDead": 1.0,
+    "rollDead": 0.8,
+    "mouthDead": 0.035,
+    "eyelidDead": 0.06
+  },
+  "note": "512 neutral is the supplied original, twice a 256 fox frame. It is one flattened painting. Eye, brow, and mouth are not separate layers. Motion is a local warp that copies the source unchanged when the face is neutral. A closed mouth cannot grow teeth. Full head turns are tracked as numbers and are not painted."
+}

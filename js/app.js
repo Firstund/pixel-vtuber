@@ -30,6 +30,8 @@ const off = document.createElement('canvas'), octx = off.getContext('2d');      
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
 import { mic, startMic, micTick, setRemoteMic } from './mic.js?v=20261106-link';
 import { createLink, packBlend, splitPageUrls, wsUrlFromLocation, DEFAULT_CHAR } from './link.js?v=20261106-fox92';
+import { createFineTrack, stepFine, packFine, applyPackedFine } from './fine-track.js?v=20261107-male';
+import { warpPortrait } from './portrait-warp.js?v=20261107-male';
 import { createTail, tailStep } from './tail.js?v=20261028-v93';
 import { createEars, earStep } from './ears.js?v=20261028-v93';
 const earSt = createEars(); let earLast = 0;
@@ -62,7 +64,7 @@ function ahogeTweenFrame(fa, t) {
   ahoTw.prev = fa;
   return t < ahoTw.until ? ahoTw.f : fa;
 }
-const CHARS = { fox93: 'assets/fox93/', fox92: 'assets/fox92/', fox91: 'assets/fox91/', fox9: 'assets/fox9/', fox85: 'assets/fox85/', fox84: 'assets/fox84/', fox83: 'assets/fox83/', fox82: 'assets/fox82/', fox81: 'assets/fox81/', fox8: 'assets/fox8/', fox71: 'assets/fox71/', fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
+const CHARS = { male1: 'assets/male1/', fox93: 'assets/fox93/', fox92: 'assets/fox92/', fox91: 'assets/fox91/', fox9: 'assets/fox9/', fox85: 'assets/fox85/', fox84: 'assets/fox84/', fox83: 'assets/fox83/', fox82: 'assets/fox82/', fox81: 'assets/fox81/', fox8: 'assets/fox8/', fox71: 'assets/fox71/', fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 // ---------- 소품 (모든 캐릭터 공통, 128px 캔버스 기준 위치) ----------
 const PROPS = { coffee: { name: '☕ 커피', x: 76, y: 94, hold: true }, laptop: { name: '💻 노트북', x: 44, y: 98 }, bag: { name: '👜 출근 가방', x: 0, y: 97 }, plant: { name: '🪴 화분', x: 98, y: 96 } };
 const propImg = {};
@@ -82,15 +84,30 @@ async function loadChar(key) {
   const base = CHARS[key];
   const m = await (await fetch(base + 'manifest.json')).json();
   const img = {};
-  await Promise.all(m.layers.map(n => new Promise((res, rej) => {
+  const layerNames = m.mode === 'fine' ? [] : m.layers;
+  await Promise.all(layerNames.map(n => new Promise((res, rej) => {
     const i = new Image(); i.onload = res; i.onerror = () => rej(new Error('asset ' + n)); i.src = base + n + '.png'; img[n] = i;
   })));
-  ch = { key, base, m, img, S: m.S, nYaw: m.yaw.length, nPitch: m.pitch.length };
+  ch = { key, base, m, img, S: m.S, nYaw: (m.yaw || [0]).length, nPitch: (m.pitch || [0]).length };
+  if (m.mode === 'fine' && m.texture) {
+    const tex = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('texture')); i.src = base + m.texture; });
+    const pc = document.createElement('canvas'); pc.width = pc.height = m.S;
+    const pctx = pc.getContext('2d', { willReadFrequently: true });
+    pctx.drawImage(tex, 0, 0, m.S, m.S);
+    ch.portrait = pctx.getImageData(0, 0, m.S, m.S).data;
+    fineTrack = createFineTrack(); lastFineT = 0;
+  }
   for (const c of [off, hc]) { c.width = c.height = ch.S; }
   octx.imageSmoothingEnabled = hctx.imageSmoothingEnabled = false;
   resize();
   window.__char = key;
-if (window.__refreshLinkUrls) window.__refreshLinkUrls();
+  const note = $('rigNote');
+  if (note) {
+    note.hidden = m.mode !== 'fine';
+    if (m.mode === 'fine') note.textContent = '남성 시안 512. 눈·눈썹·입은 분리된 그림이 아니라 원본 초상을 조금만 변형합니다. 중립이면 원본과 같습니다. 입은 이가 그려져 있지 않아 크게 벌리지 않습니다. 고개 회전 숫자는 전달되지만 몸 그림은 정면입니다. 여우 기본은 V9.2입니다.';
+  }
+  if (window.__refreshLinkUrls) window.__refreshLinkUrls();
+  const lab = $('rigDebugLabel'); if (lab) lab.hidden = m.mode !== 'fine';
   const rb = document.getElementById('react'); if (rb) rb.hidden = !m.reactions;
   if (typeof RX !== 'undefined') { RX.manual = RX.auto = null; }
 }
@@ -618,6 +635,7 @@ function autoBlink(t) {
 // ---------- 얼굴 추적 ----------
 let landmarker = null, mode = 'idle', lastVideoTime = -1, faceSeen = 0;
 let link = null, remoteV = null, remoteAt = 0, linkDisplays = 0, pubAt = 0, pubSeq = 0;
+let fineTrack = createFineTrack(), lastFineT = 0;
 const zero = { stretch: 0, smileAsym: 0, puff: 0, squint: 0, jaw: 0, funnel: 0, smile: 0, blink: 0, brow: 0, wide: 0, yaw: 0, pitch: 0, roll: 0 };
 let latest = { ...zero };
 async function loadModel() {
@@ -645,6 +663,7 @@ function readResult(r) {
     brow: m.browInnerUp || 0, wide: ((m.eyeWideLeft || 0) + (m.eyeWideRight || 0)) / 2, yaw: 0, pitch: 0, roll: 0,
     stretch: ((m.mouthStretchLeft || 0) + (m.mouthStretchRight || 0)) / 2, smileAsym: (m.mouthSmileLeft || 0) - (m.mouthSmileRight || 0),
     puff: m.cheekPuff || 0, squint: ((m.eyeSquintLeft || 0) + (m.eyeSquintRight || 0)) / 2,
+    frown: ((m.mouthFrownLeft || 0) + (m.mouthFrownRight || 0)) / 2,
   };
   const mat = r.facialTransformationMatrixes?.[0]?.data;
   if (mat) { // column-major 4x4
@@ -708,18 +727,40 @@ function cfgSnap() {
     props: (window.__PS?.props || []).slice(),
   };
 }
-function publishVtuber(t, sample, face) {
+function publishVtuber(t, sample, face, fine) {
   if (!isTrack || !link?.connected) return;
   if (t - pubAt < 33) return;
   pubAt = t;
-  link.send({
-    type: 'state', room: 'vtuber',
-    payload: {
-      kind: 'vtuber', seq: ++pubSeq, face: !!face, b: packBlend(sample || zero),
-      micOn: !!(mic.on && !mic.remote), micScore: mic.score || 0,
-      expr: exprOverride, react: RX.manual || null, cfg: cfgSnap(),
-    },
-  });
+  const payload = {
+    kind: 'vtuber', seq: ++pubSeq, face: !!face, b: packBlend(sample || zero),
+    micOn: !!(mic.on && !mic.remote), micScore: mic.score || 0,
+    expr: exprOverride, react: RX.manual || null, cfg: cfgSnap(),
+  };
+  if (fine) payload.fine = fine;
+  link.send({ type: 'state', room: 'vtuber', payload });
+}
+function fineSens() { return Math.max(0.35, Math.min(1.8, 1.15 - (cfg.smooth || 0))); }
+function updateFine(raw, t) {
+  const dt = Math.min(0.1, Math.max(0, (t - (lastFineT || t)) / 1000));
+  lastFineT = t;
+  return stepFine(fineTrack, raw, dt, fineSens());
+}
+function drawPortrait(state) {
+  if (!ch?.portrait) return;
+  const S = ch.S;
+  const warped = warpPortrait(ch.portrait, S, S, ch.m.regions, state, ch.m.track);
+  const view = new ImageData(new Uint8ClampedArray(warped), S, S);
+  octx.putImageData(view, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(off, 0, 0, S, S, 0, 0, canvas.width, canvas.height);
+  const hud = $('rigHud');
+  const debug = params.get('debug') === '1' || $('rigDebug')?.checked;
+  if (hud) {
+    hud.hidden = !debug;
+    if (debug) hud.textContent = `입 ${state.jaw.toFixed(2)} 웃음 ${state.smile.toFixed(2)} 찡 ${state.frown.toFixed(2)}\n눈 L ${state.openL.toFixed(2)} R ${state.openR.toFixed(2)} ${state.wink}\n시선 ${state.gx.toFixed(2)} ${state.gy.toFixed(2)}\n고개 ${state.yaw.toFixed(1)} ${state.pitch.toFixed(1)} ${state.roll.toFixed(1)}`;
+  }
+  $('pose').textContent = `연속 요${state.yaw.toFixed(1)} 피치${state.pitch.toFixed(1)} 롤${state.roll.toFixed(1)}`;
 }
 let cfgJson = '';
 function applyRemoteCfg(c) {
@@ -869,14 +910,23 @@ function loop(t) {
     else if (mode !== 'camera' || t - faceSeen > 1000) { b = { ...zero }; auto = autoBlink(t); if (mode === 'camera') status('얼굴을 찾는 중…'); }
     else if (mode === 'camera') status(`추적 중 (${window.__delegate})`);
     micTick(t, cfg.micSens);
-    const faceLive = mode === 'demo' || mode === 'sim' || (mode === 'camera' && t - faceSeen <= 1000);
-    publishVtuber(t, faceLive ? b : zero, faceLive);
   }
-  decide(b, auto, t);
-  draw(t);
+  const faceLive = !isDisplay && (mode === 'demo' || mode === 'sim' || (mode === 'camera' && t - faceSeen <= 1000));
+  if (ch?.m?.mode === 'fine') {
+    let fine;
+    if (isDisplay && remoteV?.fine) fine = applyPackedFine(fineTrack, remoteV.fine);
+    else fine = updateFine((isDisplay ? ((remoteV && t - remoteAt < 1200 && remoteV.face) ? b : zero) : (faceLive ? b : zero)), t);
+    drawPortrait(fine);
+    if (!isDisplay) publishVtuber(t, faceLive ? b : zero, faceLive, packFine(fineTrack));
+    if (ch.m.art === 'portrait') status(isDisplay ? '초상 수신' : (faceLive ? '남성 시안 추적' : '남성 시안'));
+  } else {
+    if (!isDisplay) publishVtuber(t, faceLive ? b : zero, faceLive);
+    decide(b, auto, t);
+    draw(t);
+  }
   frames++; window.__frames++;
   if (mic.on) { $('meterBar').style.width = Math.round(mic.score * 100) + '%'; $('meterBar').classList.toggle('hi', exc.hi); }
-  $('pose').textContent = `각도 요${pose.shown.k} 피치${pose.shown.p} 롤${pose.shown.r}`;
+  if (ch?.m?.mode !== 'fine') $('pose').textContent = `각도 요${pose.shown.k} 피치${pose.shown.p} 롤${pose.shown.r}`;
   if (t - fpsT > 1000) { $('fps').textContent = 'FPS: ' + Math.round(frames * 1000 / (t - fpsT)); frames = 0; fpsT = t; }
   requestAnimationFrame(loop);
 }
