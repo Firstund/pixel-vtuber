@@ -278,9 +278,9 @@ def write_assets(out_dir):
                     iris[y, x] = (r, g, b, 255)
     Image.fromarray(iris).save(out / 'iris.png')
     print('iris', int((iris[:, :, 3] > 0).sum()), 'closed', int(diff.sum()))
-    # Mouth frames are the painted smile opening. Do not stamp expression tiles.
-    from build_mouth_seq import main as build_mouths
-    build_mouths()
+    # Rounded mouth grid and eyelid curves. Do not stamp expression tiles.
+    from build_expressions_v3 import main as build_expressions
+    build_expressions()
 
 if __name__ == '__main__':
     write_assets('/workspace/assets/male1')

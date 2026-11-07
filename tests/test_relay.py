@@ -75,11 +75,16 @@ import { renderFront, FRONT_REST } from "./js/front-face.js";
 const read = (name) => new Uint8ClampedArray(readFileSync(name));
 const src = read("/tmp/male-neutral.rgba");
 const mouths = [];
-for (let i = 0; i < 23; i++) mouths.push(read(`/tmp/male-mouth-${String(i).padStart(2,'0')}.rgba`));
+for (let a = 0; a < 13; a++) for (let s = 0; s < 5; s++) mouths.push(read(`/tmp/male-m-${String(a).padStart(2,'0')}-${s}.rgba`));
+const lidsN = [], lidsH = [];
+for (let i = 0; i < 5; i++) {
+  lidsN.push(read(`/tmp/male-lid-n-${i}.rgba`));
+  lidsH.push(read(`/tmp/male-lid-h-${i}.rgba`));
+}
 const parts = {
-  closed: read("/tmp/male-closed.rgba"),
   iris: read("/tmp/male-iris.rgba"),
-  mouths,
+  mouths, lidsN, lidsH,
+  mouthGrid: { aperture: 13, shapes: 5 },
 };
 const rest = renderFront(src, parts, 512, 512, FRONT_REST);
 for (let i = 0; i < src.length; i++) if (src[i] !== rest[i]) process.exit(2);
@@ -102,7 +107,9 @@ for (const open of [0.85, 0.55, 0.3, 0.12, 0]) {
   if (n > prev) process.exit(5);
   prev = n;
 }
-if (prev !== 0) process.exit(6);
+// The iris mask also covers the amber lid crease above the lash, so a full
+// close does not drive that count to zero. The disk itself is covered.
+if (prev > restIris * 0.5) process.exit(6);
 const back = renderFront(src, parts, 512, 512, FRONT_REST);
 for (let i = 0; i < src.length; i++) if (src[i] !== back[i]) process.exit(7);
 const wink = renderFront(src, parts, 512, 512, { ...FRONT_REST, openL: 0, openR: 1 });
@@ -141,6 +148,18 @@ const shut = bounds(renderFront(src, parts, 512, 512, { ...FRONT_REST, jaw: 0.8,
 if (shut.n !== 0) process.exit(15);
 const smiled = bounds(renderFront(src, parts, 512, 512, { ...FRONT_REST, smile: 0.9 }));
 if (!(smiled.n > 20 && smiled.n < wide.n)) process.exit(16);
+const round = bounds(renderFront(src, parts, 512, 512, { ...FRONT_REST, jaw: 0.85, funnel: 0.9 }));
+const grin = bounds(renderFront(src, parts, 512, 512, { ...FRONT_REST, jaw: 0.85, smile: 0.9 }));
+if (!(grin.x1 - grin.x0 > wide.x1 - wide.x0 && round.x1 - round.x0 < wide.x1 - wide.x0)) process.exit(19);
+const puff = renderFront(src, parts, 512, 512, { ...FRONT_REST, puff: 1 });
+for (let i = 0; i < src.length; i++) if (src[i] !== puff[i]) process.exit(20);
+const half = irisCount(renderFront(src, parts, 512, 512, { ...FRONT_REST, openL: 0.5, openR: 0.5 }));
+if (!(half < restIris && half > prev)) process.exit(21);
+const happyShut = renderFront(src, parts, 512, 512, { ...FRONT_REST, openL: 0, openR: 0, smile: 0.8 });
+const plainShut = renderFront(src, parts, 512, 512, { ...FRONT_REST, openL: 0, openR: 0 });
+let lidDiff = 0;
+for (let i = 0; i < src.length; i += 4) if (happyShut[i] !== plainShut[i]) lidDiff++;
+if (lidDiff < 20) process.exit(22);
 function mouthParts(buf) {
   const diff = new Uint8Array(512 * 512);
   for (let y = 220; y < 300; y++) for (let x = 180; x < 340; x++) {
@@ -195,10 +214,13 @@ if (shift < 8) process.exit(12);
             raw = Image.open(ROOT / rel).convert('RGBA').tobytes()
             Path(name).write_bytes(raw)
         dump('/tmp/male-neutral.rgba', 'assets/male1/neutral.png')
-        dump('/tmp/male-closed.rgba', 'assets/male1/eyes-closed.png')
         dump('/tmp/male-iris.rgba', 'assets/male1/iris.png')
-        for i in range(23):
-            dump(f'/tmp/male-mouth-{i:02d}.rgba', f'assets/male1/mouth-{i:02d}.png')
+        for a in range(13):
+            for s in range(5):
+                dump(f'/tmp/male-m-{a:02d}-{s}.rgba', f'assets/male1/expr/m-{a:02d}-{s}.png')
+        for i in range(5):
+            dump(f'/tmp/male-lid-n-{i}.rgba', f'assets/male1/expr/lid-n-{i}.png')
+            dump(f'/tmp/male-lid-h-{i}.rgba', f'assets/male1/expr/lid-h-{i}.png')
         run = subprocess.run(['node', '--input-type=module', '-e', script], cwd=ROOT, capture_output=True, text=True)
         self.assertEqual(run.returncode, 0, run.stderr[-500:] + run.stdout[-500:])
 

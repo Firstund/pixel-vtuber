@@ -36,31 +36,37 @@ function copyPx(out, src, i) {
   out[i] = src[i]; out[i + 1] = src[i + 1]; out[i + 2] = src[i + 2]; out[i + 3] = 255;
 }
 
-function paintEyes(out, closed, w, state) {
-  if (!closed) return;
-  const covers = {
-    L: clamp((1 - (state.openL == null ? 1 : state.openL)) / 0.92, 0, 1),
-    R: clamp((1 - (state.openR == null ? 1 : state.openR)) / 0.92, 0, 1),
-  };
-  if (covers.L <= 0 && covers.R <= 0) return;
-  const n = w * w;
-  for (let p = 0; p < n; p++) {
-    const a = closed[p * 4 + 3];
-    if (a < 128) continue;
-    const x = p % w;
-    const y = (p / w) | 0;
-    let side = null;
-    let info = null;
-    for (const key of ['L', 'R']) {
-      const hit = ellipse(FRONT_EYES[key], x, y);
-      if (hit.inside) { side = key; info = hit; break; }
+const LID_BOX = {
+  L: { x0: 186, y0: 168, x1: 242, y1: 220 },
+  R: { x0: 266, y0: 162, x1: 326, y1: 214 },
+};
+
+function lidIndex(open) {
+  const cover = clamp((1 - (open == null ? 1 : open)) / 0.92, 0, 1);
+  return clamp(Math.round(cover * 4), 0, 4);
+}
+
+function blitBox(out, patch, w, box) {
+  if (!patch || !box) return;
+  for (let y = box.y0; y < box.y1; y++) {
+    for (let x = box.x0; x < box.x1; x++) {
+      const i = (y * w + x) * 4;
+      if (patch[i + 3] < 128) continue;
+      copyPx(out, patch, i);
     }
-    if (!side) {
-      if (covers.L > 0.97 || covers.R > 0.97) copyPx(out, closed, p * 4);
-      continue;
-    }
-    const edge = -1 + 2 * covers[side];
-    if (covers[side] > 0.97 || info.v < edge) copyPx(out, closed, p * 4);
+  }
+}
+
+function paintEyes(out, parts, w, state) {
+  const neutral = parts && parts.lidsN;
+  const happy = parts && parts.lidsH;
+  if (!neutral || !neutral.length) return;
+  const smile = state.smile || 0;
+  for (const key of ['L', 'R']) {
+    const idx = lidIndex(key === 'L' ? state.openL : state.openR);
+    if (idx <= 0) continue;
+    const happyLid = smile > 0.55 && idx >= 2 && happy && happy[idx];
+    blitBox(out, happyLid || neutral[idx], w, LID_BOX[key]);
   }
 }
 
@@ -110,26 +116,46 @@ function blitPatch(out, patch, w) {
   }
 }
 
-// One mouth. Frame 0 is empty (the painted smile). Each later frame is that
-// same lip line opened one pixel further. No crossfade and no second shape.
+// Aperture 0 is empty, so the painted smile stays exact. Other cells are that
+// same lip opened into a round speech shape, a wider smile, or a rounder O.
+// Cheek puff is not a face parameter here.
 export function mouthOpenAmount(state) {
   const jaw = clamp(state.jaw || 0, 0, 1);
   const smile = clamp(state.smile || 0, 0, 1);
+  const funnel = clamp(state.funnel || 0, 0, 1);
   const close = clamp(state.close || 0, 0, 1);
   let open = jaw * (1 - close);
-  if (close < 0.45) open = Math.max(open, Math.max(0, smile - 0.42) * 0.22);
+  if (close < 0.45) {
+    open = Math.max(open, Math.max(0, smile - 0.4) * 0.2);
+    open = Math.max(open, Math.max(0, funnel - 0.35) * 0.45);
+  }
   return clamp(open, 0, 1);
 }
 
-export function mouthFrameIndex(state, count) {
-  if (!count) return 0;
-  return clamp(Math.round(mouthOpenAmount(state) * (count - 1)), 0, count - 1);
+export function mouthShape(state) {
+  const smile = clamp(state.smile || 0, 0, 1);
+  const funnel = clamp(state.funnel || 0, 0, 1);
+  const close = clamp(state.close || 0, 0, 1);
+  if (close > 0.45) return 0;
+  if (funnel > smile + 0.12) return -clamp(funnel, 0, 1);
+  if (smile > funnel + 0.12) return clamp(smile, 0, 1);
+  return clamp(smile - funnel, -1, 1);
+}
+
+export function mouthCell(state, grid) {
+  const A = (grid && grid.aperture) || 1;
+  const S = (grid && grid.shapes) || 1;
+  const ai = clamp(Math.round(mouthOpenAmount(state) * (A - 1)), 0, A - 1);
+  if (ai <= 0) return 0;
+  const si = clamp(Math.round((mouthShape(state) + 1) / 2 * (S - 1)), 0, S - 1);
+  return ai * S + si;
 }
 
 function paintMouth(out, parts, w, state) {
   const frames = parts && parts.mouths;
   if (!frames || !frames.length) return;
-  blitPatch(out, frames[mouthFrameIndex(state, frames.length)], w);
+  const idx = parts.mouthGrid ? mouthCell(state, parts.mouthGrid) : clamp(Math.round(mouthOpenAmount(state) * (frames.length - 1)), 0, frames.length - 1);
+  blitPatch(out, frames[idx], w);
 }
 
 function paintBrows(out, neutral, w, state) {
@@ -165,7 +191,7 @@ function paintBrows(out, neutral, w, state) {
 export function renderFront(neutral, parts, w, h, state) {
   const s = state || FRONT_REST;
   const out = new Uint8ClampedArray(neutral);
-  paintEyes(out, parts && parts.closed, w, s);
+  paintEyes(out, parts || {}, w, s);
   paintGaze(out, neutral, parts && parts.iris, w, s);
   paintMouth(out, parts || {}, w, s);
   paintBrows(out, neutral, w, s);

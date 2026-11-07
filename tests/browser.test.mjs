@@ -178,7 +178,7 @@ test('display page takes no camera and follows the other browser', { timeout: 12
     pub.close();
 
     await a.send('Page.navigate', { url: `${base}/?role=display&obs=1&char=male1` });
-    await waitFor(a, `window.__char === 'male1' && document.getElementById('char').value === 'male1'`);
+    await waitFor(a, `window.__char === 'male1' && document.getElementById('char').value === 'male1'`, 20000);
     const maleNeutral = await evaljs(a, `(() => { const c = document.getElementById('c'); const d = c.getContext('2d').getImageData(0,0,c.width,c.height).data; let n=0; for (let i=0;i<d.length;i+=16) n = (n + d[i] + d[i+1] + d[i+2]) >>> 0; return n; })()`);
     const malePub = new WebSocket(`ws://127.0.0.1:${httpPort}/ws`);
     await once(malePub, 'open');

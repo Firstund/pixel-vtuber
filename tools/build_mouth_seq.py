@@ -1,3 +1,9 @@
+"""Superseded by tools/build_expressions_v3.py.
+
+This was the flat rectangular opening. The live mouth grid is the rounded
+ellipse in build_expressions_v3.py. Running this file rewrites mouth-XX.png,
+which the app no longer loads.
+
 """Open the painted smile instead of stamping a second mouth.
 
 Frame 0 is empty, so rest tracking stays the neutral painting. Later frames
