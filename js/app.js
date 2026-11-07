@@ -32,6 +32,7 @@ import { mic, startMic, micTick, setRemoteMic } from './mic.js?v=20261106-link';
 import { createLink, packBlend, splitPageUrls, wsUrlFromLocation, DEFAULT_CHAR } from './link.js?v=20261106-fox92';
 import { createFineTrack, stepFine, packFine, applyPackedFine } from './fine-track.js?v=20261107-male';
 import { warpPortrait } from './portrait-warp.js?v=20261107-male';
+import { renderRowdy } from './rowdy-face.js?v=20261107-rowdy';
 import { createTail, tailStep } from './tail.js?v=20261028-v93';
 import { createEars, earStep } from './ears.js?v=20261028-v93';
 const earSt = createEars(); let earLast = 0;
@@ -104,9 +105,7 @@ async function loadChar(key) {
   const note = $('rigNote');
   if (note) {
     note.hidden = m.mode !== 'fine';
-    if (m.mode === 'fine') note.textContent = m.artRevision === 'v1-superseded'
-      ? '이 얼굴은 v1이라 폐기 예정입니다. 목표 외형은 20대 초반의 섬세한 미형이고, 새 원본이 오면 그림만 바꿉니다. 추적과 중계는 유지됩니다. 여우 기본은 V9.2입니다.'
-      : '남성 시안 512. 중립이면 원본과 같습니다. 여우 기본은 V9.2입니다.';
+    if (m.mode === 'fine') note.textContent = '악동 후디 512. 얼굴이 없을 때는 승인된 그림 그대로입니다. 눈은 그 눈구멍만 감기고, 입은 그려진 이 아래로 속이 열립니다. 고개는 그림 전체가 몇 픽셀 움직입니다. VRoid가 아닙니다. 기본 캐릭터는 여우 V9.2입니다.';
   }
   if (window.__refreshLinkUrls) window.__refreshLinkUrls();
   const lab = $('rigDebugLabel'); if (lab) lab.hidden = m.mode !== 'fine';
@@ -146,6 +145,17 @@ for (const id of ['autoBlink', 'breath']) {
   zl();
   $('zoom').oninput = e => { PS.zoom = +e.target.value || 0; zl(); savePS(); resize(); };
   $('posReset').onclick = () => { PS.zoom = 0; PS.px = 0; PS.py = 0; zl(); savePS(); resize(); };
+  const trackReset = $('trackReset');
+  if (trackReset) trackReset.onclick = () => {
+    for (const [id, val] of [['tMouth', '0.18'], ['tBlink', '0.5'], ['tSmile', '0.4'], ['smooth', '0.5']]) {
+      const el = $(id);
+      if (!el) continue;
+      el.value = val;
+      el.dispatchEvent(new Event('input'));
+    }
+    fineTrack = createFineTrack();
+    lastFineT = 0;
+  };
   let drag = null;
   canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, px: PS.px || 0, py: PS.py || 0 }; canvas.setPointerCapture(e.pointerId); canvas.classList.add('drag'); });
   canvas.addEventListener('pointermove', e => { if (!drag) return; PS.px = Math.round(drag.px + e.clientX - drag.x); PS.py = Math.round(drag.py + e.clientY - drag.y); canvas.style.transform = `translate(${PS.px}px, ${PS.py}px)`; });
@@ -656,6 +666,7 @@ function readResult(r) {
   const out = {
     jaw: m.jawOpen || 0, funnel: Math.max(m.mouthFunnel || 0, m.mouthPucker || 0),
     smile: ((m.mouthSmileLeft || 0) + (m.mouthSmileRight || 0)) / 2,
+    close: m.mouthClose || 0,
     blink: Math.max(m.eyeBlinkLeft || 0, m.eyeBlinkRight || 0) * 0.5 + ((m.eyeBlinkLeft || 0) + (m.eyeBlinkRight || 0)) / 4,
     blinkL: m.eyeBlinkLeft || 0, blinkR: m.eyeBlinkRight || 0,
     // v9.3: 시선 (사용자 기준 +gx = 사용자 왼쪽, +gy = 위) · 눈썹 세부
@@ -747,10 +758,22 @@ function updateFine(raw, t) {
   lastFineT = t;
   return stepFine(fineTrack, raw, dt, fineSens());
 }
+function orientFine(state) {
+  if (!cfg.mirror) return state;
+  return {
+    ...state,
+    openL: state.openR, openR: state.openL,
+    gx: -(state.gx || 0), yaw: -(state.yaw || 0), roll: -(state.roll || 0),
+    wink: state.wink === 'L' ? 'R' : state.wink === 'R' ? 'L' : (state.wink || 'none'),
+  };
+}
 function drawPortrait(state) {
   if (!ch?.portrait) return;
   const S = ch.S;
-  const warped = warpPortrait(ch.portrait, S, S, ch.m.regions, state, ch.m.track);
+  const posed = orientFine(state);
+  const warped = ch.m.renderer === 'rowdy'
+    ? renderRowdy(ch.portrait, S, S, posed)
+    : warpPortrait(ch.portrait, S, S, ch.m.regions, posed, ch.m.track);
   const view = new ImageData(new Uint8ClampedArray(warped), S, S);
   octx.putImageData(view, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -916,11 +939,16 @@ function loop(t) {
   const faceLive = !isDisplay && (mode === 'demo' || mode === 'sim' || (mode === 'camera' && t - faceSeen <= 1000));
   if (ch?.m?.mode === 'fine') {
     let fine;
-    if (isDisplay && remoteV?.fine) fine = applyPackedFine(fineTrack, remoteV.fine);
-    else fine = updateFine((isDisplay ? ((remoteV && t - remoteAt < 1200 && remoteV.face) ? b : zero) : (faceLive ? b : zero)), t);
+    const fresh = !!(remoteV && t - remoteAt < 1200 && remoteV.face && remoteV.fine);
+    if (isDisplay && fresh) fine = applyPackedFine(fineTrack, remoteV.fine);
+    else if (isDisplay) fine = updateFine({ ...zero }, t);
+    else {
+      const lostBlink = !faceLive && auto > 0 ? 1 : 0;
+      fine = updateFine(faceLive ? b : { ...zero, blinkL: lostBlink, blinkR: lostBlink }, t);
+    }
     drawPortrait(fine);
     if (!isDisplay) publishVtuber(t, faceLive ? b : zero, faceLive, packFine(fineTrack));
-    if (ch.m.art === 'portrait') status(isDisplay ? '초상 수신' : (faceLive ? '남성 시안 추적' : '남성 시안'));
+    if (ch.m.art === 'portrait') status(isDisplay ? '초상 수신' : (faceLive ? '악동 추적' : '악동 · 그림 유지'));
   } else {
     if (!isDisplay) publishVtuber(t, faceLive ? b : zero, faceLive);
     decide(b, auto, t);

@@ -23,10 +23,11 @@ export const MALE1_TRACK = Object.freeze({
   eyelidSteps: 5,
   mouthSteps: 8,
   browSteps: 5,
-  gazePx: 3,
-  blinkCompress: 0.55,
+  gazePx: 2,
+  blinkCompress: 0.85,
   mouthScale: 0.18,
-  browPx: 3,
+  mouthOpenPx: 14,
+  browPx: 2,
   smilePx: 2,
   poseHoldMs: 40,
   yawDead: 1.2,
@@ -37,7 +38,7 @@ export const MALE1_TRACK = Object.freeze({
 });
 
 export const FINE_FIELDS = Object.freeze([
-  'jaw', 'smile', 'frown', 'funnel',
+  'jaw', 'smile', 'frown', 'funnel', 'close',
   'openL', 'openR', 'gx', 'gy',
   'browIn', 'browOut', 'browDown',
   'yaw', 'pitch', 'roll',
@@ -47,7 +48,7 @@ const TAU = { eyes: 0.03, mouth: 0.04, gaze: 0.035, brow: 0.045, pose: 0.055 };
 
 export function createFineTrack() {
   return {
-    jaw: 0, smile: 0, frown: 0, funnel: 0,
+    jaw: 0, smile: 0, frown: 0, funnel: 0, close: 0,
     openL: 1, openR: 1, gx: 0, gy: 0,
     browIn: 0, browOut: 0, browDown: 0,
     yaw: 0, pitch: 0, roll: 0,
@@ -74,6 +75,7 @@ export function stepFine(track, raw, dt, sens = 1) {
   const blinkL = r.blinkL != null ? r.blinkL : (r.blink || 0);
   const blinkR = r.blinkR != null ? r.blinkR : (r.blink || 0);
   track.jaw = mix(track.jaw, clamp(r.jaw || 0, 0, 1), d, tau(TAU.mouth));
+  track.close = mix(track.close, clamp(r.close || 0, 0, 1), d, tau(TAU.mouth));
   track.smile = mix(track.smile, clamp(r.smile || 0, 0, 1), d, tau(TAU.mouth));
   track.frown = mix(track.frown, clamp(r.frown || 0, 0, 1), d, tau(TAU.mouth));
   track.funnel = mix(track.funnel, clamp(r.funnel || 0, 0, 1), d, tau(TAU.mouth));

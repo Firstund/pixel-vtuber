@@ -185,7 +185,7 @@ def _sanitize_vtuber(p):
 
 
 FINE_FIELDS = {
-    'jaw': (0, 1), 'smile': (0, 1), 'frown': (0, 1), 'funnel': (0, 1),
+    'jaw': (0, 1), 'smile': (0, 1), 'frown': (0, 1), 'funnel': (0, 1), 'close': (0, 1),
     'openL': (0, 1), 'openR': (0, 1), 'gx': (-1, 1), 'gy': (-1, 1),
     'browIn': (0, 1), 'browOut': (0, 1), 'browDown': (0, 1),
     'yaw': (-90, 90), 'pitch': (-90, 90), 'roll': (-90, 90),

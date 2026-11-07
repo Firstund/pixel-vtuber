@@ -58,6 +58,16 @@ test('small yaw noise stays in the deadzone and a real turn moves', () => {
   assert.notEqual(turned, first);
 });
 
+test('mouth close eases in and a resting face returns to open eyes', () => {
+  const track = createFineTrack();
+  settle(track, raw({ close: 1, jaw: 0.05 }));
+  assert.ok(track.close > 0.8);
+  assert.ok(track.openL > 0.9);
+  settle(track, raw());
+  assert.ok(track.close < 0.05);
+  assert.ok(track.jaw < 0.05);
+});
+
 test('neutral warp is the original portrait and a blink changes pixels', () => {
   const png = readFileSync(new URL('../assets/male1/neutral.png', import.meta.url));
   // Decode via the PNG IHDR only here; pixels come from a raw sidecar written by the test runner if present.

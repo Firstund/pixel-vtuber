@@ -68,16 +68,62 @@ class DefaultCharTests(unittest.TestCase):
         self.assertEqual(wh('assets/fox92/base.png')[0], 256)
         self.assertEqual(wh('assets/male1/neutral.png'), (512, 512))
         self.assertEqual(wh('assets/male1/source-1024.png'), (1024, 1024))
-        # Neutral warp of the real painting must be byte-identical.
+        # Rest pose of the approved painting must be byte-identical.
         script = r'''
 import { readFileSync } from "node:fs";
-import { warpPortrait, buffersEqual } from "./js/portrait-warp.js";
+import { renderRowdy, countIris, ROWDY_EYES, ROWDY_REST } from "./js/rowdy-face.js";
 const src = new Uint8ClampedArray(readFileSync("/tmp/male-neutral.rgba"));
-const regions = JSON.parse(readFileSync("assets/male1/manifest.json","utf8")).regions;
-const limits = JSON.parse(readFileSync("assets/male1/manifest.json","utf8")).track;
-const neutral = { openL:1, openR:1, gx:0, gy:0, jaw:0, smile:0, frown:0, browOut:0, browDown:0 };
-const out = warpPortrait(src, 512, 512, regions, neutral, limits);
-if (!buffersEqual(src, out)) process.exit(2);
+const rest = renderRowdy(src, 512, 512, ROWDY_REST);
+for (let i = 0; i < src.length; i++) if (src[i] !== rest[i]) process.exit(2);
+const blink = renderRowdy(src, 512, 512, { ...ROWDY_REST, openL: 0, openR: 0 });
+if (countIris(blink, 512, ROWDY_EYES.L) !== 0 || countIris(blink, 512, ROWDY_EYES.R) !== 0) process.exit(3);
+const back = renderRowdy(src, 512, 512, ROWDY_REST);
+for (let i = 0; i < src.length; i++) if (src[i] !== back[i]) process.exit(4);
+const restL = countIris(src, 512, ROWDY_EYES.L);
+const restR = countIris(src, 512, ROWDY_EYES.R);
+if (restL < 20 || restR < 20) process.exit(5);
+let prev = restL + restR;
+for (const open of [0.85, 0.6, 0.35, 0.15, 0]) {
+  const frame = renderRowdy(src, 512, 512, { ...ROWDY_REST, openL: open, openR: open });
+  const n = countIris(frame, 512, ROWDY_EYES.L) + countIris(frame, 512, ROWDY_EYES.R);
+  if (n > prev) process.exit(6);
+  prev = n;
+}
+if (prev !== 0) process.exit(7);
+const wink = renderRowdy(src, 512, 512, { ...ROWDY_REST, openL: 0, openR: 1 });
+if (countIris(wink, 512, ROWDY_EYES.L) !== 0 || countIris(wink, 512, ROWDY_EYES.R) < restR) process.exit(8);
+function mouthPx(buf) {
+  let n = 0;
+  for (let i = 0; i < buf.length; i += 4) if (buf[i] === 87 && buf[i + 1] === 36 && buf[i + 2] === 50) n++;
+  return n;
+}
+const mid = renderRowdy(src, 512, 512, { ...ROWDY_REST, jaw: 0.45 });
+const wide = renderRowdy(src, 512, 512, { ...ROWDY_REST, jaw: 1 });
+if (!(mouthPx(wide) > mouthPx(mid) && mouthPx(mid) > mouthPx(src))) process.exit(9);
+const shut = renderRowdy(src, 512, 512, { ...ROWDY_REST, close: 1 });
+let hidden = 0;
+for (let y = 226; y < 256; y++) for (let x = 230; x < 286; x++) {
+  const i = (y * 512 + x) * 4;
+  if (src[i] > 230 && src[i + 1] > 200 && shut[i] < 200) hidden++;
+}
+if (hidden < 15) process.exit(10);
+function irisX(buf, spans) {
+  let n = 0, s = 0;
+  for (const row of spans) {
+    const y = row[0];
+    for (let r = 1; r < row.length; r++) {
+      for (let x = row[r][0]; x <= row[r][1]; x++) {
+        const i = (y * 512 + x) * 4;
+        if (Math.abs(buf[i] - 219) <= 16 && Math.abs(buf[i + 1] - 149) <= 16 && buf[i] < 235) { n++; s += x; }
+      }
+    }
+  }
+  return n ? s / n : 0;
+}
+const gazed = renderRowdy(src, 512, 512, { ...ROWDY_REST, gx: 1 });
+if (!(irisX(gazed, ROWDY_EYES.L) < irisX(src, ROWDY_EYES.L) - 0.4)) process.exit(11);
+if (countIris(gazed, 512, ROWDY_EYES.L) < restL * 0.7) process.exit(12);
+if (src[3] !== 0 || src[(511 * 512 + 511) * 4 + 3] !== 0) process.exit(13);
 '''
         try:
             from PIL import Image
@@ -102,6 +148,7 @@ class SanitizeTests(unittest.TestCase):
         self.assertEqual(fine['jaw'], 0.42)
         self.assertEqual(fine['wink'], 'L')
         self.assertEqual(fine['yaw'], 12.2)
+        self.assertEqual(fine['close'], 0)
         self.assertNotIn('image', fine)
         self.assertIn('male1', relay.CHARS)
         self.assertEqual(relay.DEFAULT_CHAR, 'fox92')

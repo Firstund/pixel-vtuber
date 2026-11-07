@@ -1,18 +1,19 @@
 {
-  "name": "남성 시안 v1 (외형 폐기 예정)",
-  "artRevision": "v1-superseded",
+  "name": "악동 후디 512",
   "S": 512,
   "mode": "fine",
   "art": "portrait",
+  "renderer": "rowdy",
+  "artRevision": "rowdy-plus",
   "texture": "neutral.png",
   "source": "source-1024.png",
   "layers": [],
   "regions": {
-    "eyeL": [186, 152, 248, 190],
-    "eyeR": [270, 152, 334, 190],
-    "browL": [180, 128, 252, 158],
-    "browR": [266, 128, 340, 158],
-    "mouth": [210, 246, 308, 282]
+    "eyeL": [188, 196, 226, 211],
+    "eyeR": [263, 177, 305, 195],
+    "browL": [196, 178, 226, 194],
+    "browR": [266, 156, 318, 176],
+    "mouth": [230, 226, 286, 256]
   },
   "track": {
     "S": 512,
@@ -22,11 +23,12 @@
     "eyelidSteps": 5,
     "mouthSteps": 8,
     "browSteps": 5,
-    "gazePx": 3,
-    "blinkCompress": 0.55,
+    "gazePx": 2,
+    "blinkCompress": 0.85,
     "mouthScale": 0.18,
-    "browPx": 3,
-    "smilePx": 2,
+    "mouthOpenPx": 7,
+    "browPx": 1,
+    "smilePx": 0,
     "poseHoldMs": 40,
     "yawDead": 1.2,
     "pitchDead": 1.0,
@@ -34,5 +36,5 @@
     "mouthDead": 0.035,
     "eyelidDead": 0.06
   },
-  "note": "v1 art is superseded. The face reads middle-aged (heavy brow, jaw, stubble) and is not the target. Target is an adult early-20s decadent bishounen: delicate anime/JRPG pixel, no rugged jaw, stubble, or heavy brow. Keep this file only so the continuous tracker and relay can be swapped when v2 art arrives. Region boxes belong to v1 and must be retuned for v2. Do not extract layers from v1."
+  "note": "Approved rowdy hoodie, 512, transparent cutout of plus-512. Rest pixels match that painting. Blink covers the measured eye opening only. Jaw above rest paints a mouth interior under the existing teeth. Head motion shifts the whole sprite by at most 2px. Not a VRoid mesh. Separate drawn eyelids, teeth interiors, and hair sheets were not in the source."
 }
