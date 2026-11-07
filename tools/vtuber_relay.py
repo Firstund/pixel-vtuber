@@ -38,7 +38,7 @@ REACTS = {'surprise', 'tired', 'flustered', 'wink', 'happy', 'angry'}
 PROPS = {'coffee', 'laptop', 'bag', 'plant'}
 DEFAULT_CHAR = 'fox92'
 CHARS = {
-    'male1', 'fox93', 'fox92', 'fox91', 'fox9', 'fox85', 'fox84', 'fox83', 'fox82', 'fox81',
+    'male256', 'male1', 'fox93', 'fox92', 'fox91', 'fox9', 'fox85', 'fox84', 'fox83', 'fox82', 'fox81',
     'fox8', 'fox71', 'fox7', 'fox65', 'fox64', 'fox63', 'fox62', 'fox61', 'fox6',
     'fox53', 'fox52', 'fox51', 'fox5', 'fox4', 'fox3', 'fox2', 'test',
 }

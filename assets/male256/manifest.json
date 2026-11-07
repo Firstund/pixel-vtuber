@@ -1,0 +1,129 @@
+{
+  "name": "\uc545\ub3d9 \ud6c4\ub514 256",
+  "S": 256,
+  "mode": "fine",
+  "art": "portrait",
+  "renderer": "front",
+  "artRevision": "rowdy-256",
+  "sourceNote": "Generated concept painting supplied as neutral-256.png. Not hand-drawn.",
+  "texture": "neutral.png",
+  "mouths": [
+    "expr/m-00-0.png",
+    "expr/m-00-1.png",
+    "expr/m-00-2.png",
+    "expr/m-00-3.png",
+    "expr/m-00-4.png",
+    "expr/m-01-0.png",
+    "expr/m-01-1.png",
+    "expr/m-01-2.png",
+    "expr/m-01-3.png",
+    "expr/m-01-4.png",
+    "expr/m-02-0.png",
+    "expr/m-02-1.png",
+    "expr/m-02-2.png",
+    "expr/m-02-3.png",
+    "expr/m-02-4.png",
+    "expr/m-03-0.png",
+    "expr/m-03-1.png",
+    "expr/m-03-2.png",
+    "expr/m-03-3.png",
+    "expr/m-03-4.png",
+    "expr/m-04-0.png",
+    "expr/m-04-1.png",
+    "expr/m-04-2.png",
+    "expr/m-04-3.png",
+    "expr/m-04-4.png",
+    "expr/m-05-0.png",
+    "expr/m-05-1.png",
+    "expr/m-05-2.png",
+    "expr/m-05-3.png",
+    "expr/m-05-4.png",
+    "expr/m-06-0.png",
+    "expr/m-06-1.png",
+    "expr/m-06-2.png",
+    "expr/m-06-3.png",
+    "expr/m-06-4.png",
+    "expr/m-07-0.png",
+    "expr/m-07-1.png",
+    "expr/m-07-2.png",
+    "expr/m-07-3.png",
+    "expr/m-07-4.png",
+    "expr/m-08-0.png",
+    "expr/m-08-1.png",
+    "expr/m-08-2.png",
+    "expr/m-08-3.png",
+    "expr/m-08-4.png"
+  ],
+  "mouthGrid": {
+    "aperture": 9,
+    "shapes": 5
+  },
+  "lids": {
+    "neutral": [
+      "expr/lid-n-0.png",
+      "expr/lid-n-1.png",
+      "expr/lid-n-2.png",
+      "expr/lid-n-3.png",
+      "expr/lid-n-4.png"
+    ],
+    "happy": [
+      "expr/lid-h-0.png",
+      "expr/lid-h-1.png",
+      "expr/lid-h-2.png",
+      "expr/lid-h-3.png",
+      "expr/lid-h-4.png"
+    ]
+  },
+  "iris": "iris.png",
+  "sclera": [
+    243,
+    212,
+    180
+  ],
+  "boxes": {
+    "L": {
+      "x0": 96,
+      "y0": 88,
+      "x1": 120,
+      "y1": 110
+    },
+    "R": {
+      "x0": 140,
+      "y0": 82,
+      "x1": 166,
+      "y1": 108
+    }
+  },
+  "brows": {
+    "L": {
+      "x0": 98,
+      "y0": 86,
+      "x1": 122,
+      "y1": 95
+    },
+    "R": {
+      "x0": 142,
+      "y0": 82,
+      "x1": 168,
+      "y1": 93
+    }
+  },
+  "layers": [],
+  "regions": {
+    "mouth": [
+      117,
+      118,
+      146,
+      136
+    ]
+  },
+  "track": {
+    "S": 256,
+    "gazePx": 1,
+    "gazePy": 1,
+    "browPx": 1,
+    "blinkCompress": 0.92,
+    "poseHoldMs": 40
+  },
+  "note": "Native 256 frontal hoodie. Mouth and lids are measured on this painting. Head angles are not drawn. Cheek puff is not drawn. Generated concept, not hand-drawn."
+}

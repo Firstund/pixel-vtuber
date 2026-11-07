@@ -33,7 +33,7 @@ import { createLink, packBlend, splitPageUrls, wsUrlFromLocation, DEFAULT_CHAR }
 import { createFineTrack, stepFine, packFine, applyPackedFine } from './fine-track.js?v=20261107-male';
 import { warpPortrait } from './portrait-warp.js?v=20261107-male';
 import { renderRowdy } from './rowdy-face.js?v=20261107-rowdy';
-import { renderFront } from './front-face.js?v=20261107-expr';
+import { renderFront } from './front-face.js?v=20261107-m256';
 import { createTail, tailStep } from './tail.js?v=20261028-v93';
 import { createEars, earStep } from './ears.js?v=20261028-v93';
 const earSt = createEars(); let earLast = 0;
@@ -66,7 +66,7 @@ function ahogeTweenFrame(fa, t) {
   ahoTw.prev = fa;
   return t < ahoTw.until ? ahoTw.f : fa;
 }
-const CHARS = { male1: 'assets/male1/', fox93: 'assets/fox93/', fox92: 'assets/fox92/', fox91: 'assets/fox91/', fox9: 'assets/fox9/', fox85: 'assets/fox85/', fox84: 'assets/fox84/', fox83: 'assets/fox83/', fox82: 'assets/fox82/', fox81: 'assets/fox81/', fox8: 'assets/fox8/', fox71: 'assets/fox71/', fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
+const CHARS = { male256: 'assets/male256/', male1: 'assets/male1/', fox93: 'assets/fox93/', fox92: 'assets/fox92/', fox91: 'assets/fox91/', fox9: 'assets/fox9/', fox85: 'assets/fox85/', fox84: 'assets/fox84/', fox83: 'assets/fox83/', fox82: 'assets/fox82/', fox81: 'assets/fox81/', fox8: 'assets/fox8/', fox71: 'assets/fox71/', fox7: 'assets/fox7/', fox65: 'assets/fox65/', fox64: 'assets/fox64/', fox63: 'assets/fox63/', fox62: 'assets/fox62/', fox61: 'assets/fox61/', fox6: 'assets/fox6/', fox53: 'assets/fox53/', fox52: 'assets/fox52/', fox51: 'assets/fox51/', fox5: 'assets/fox5/', fox4: 'assets/fox4/', fox3: 'assets/fox3/', fox2: 'assets/fox2/', test: 'assets/test/' };
 // ---------- 소품 (모든 캐릭터 공통, 128px 캔버스 기준 위치) ----------
 const PROPS = { coffee: { name: '☕ 커피', x: 76, y: 94, hold: true }, laptop: { name: '💻 노트북', x: 44, y: 98 }, bag: { name: '👜 출근 가방', x: 0, y: 97 }, plant: { name: '🪴 화분', x: 98, y: 96 } };
 const propImg = {};
@@ -121,7 +121,16 @@ async function loadChar(key) {
       const mouths = rest.slice(0, m.mouths.length);
       const lidsN = rest.slice(m.mouths.length, m.mouths.length + lids.neutral.length);
       const lidsH = rest.slice(m.mouths.length + lids.neutral.length);
-      ch.front = { iris, mouths, lidsN, lidsH, mouthGrid: m.mouthGrid };
+      ch.front = {
+        iris, mouths, lidsN, lidsH,
+        mouthGrid: m.mouthGrid,
+        gazePx: m.track && m.track.gazePx,
+        gazePy: m.track && m.track.gazePy,
+        browPx: m.track && m.track.browPx,
+        sclera: m.sclera,
+        boxes: m.boxes,
+        brows: m.brows,
+      };
     }
   }
   for (const c of [off, hc]) { c.width = c.height = ch.S; }
@@ -131,7 +140,8 @@ async function loadChar(key) {
   const note = $('rigNote');
   if (note) {
     note.hidden = m.mode !== 'fine';
-    if (m.mode === 'fine') note.textContent = '정면 악동 후디 512. 얼굴이 없으면 이 그림 그대로입니다. 입은 그린 미소가 둥글게 벌어지고, 웃음은 더 넓으며, 오므리면 동그랗습니다. 볼은 부풀리지 않습니다. 기본 캐릭터는 여우 V9.2입니다.';
+    if (m.mode === 'fine' && key === 'male256') note.textContent = '악동 후디 256. 이 그림은 생성 원화입니다. 입은 그 미소가 둥글게 열리고, 눈은 속눈썹 곡선으로 감깁니다. 고개 회전과 머리카락 따라가기는 겹침 그림이 없어 그리지 않습니다. 볼은 부풀리지 않습니다. 기본 캐릭터는 여우 V9.2입니다.';
+    else if (m.mode === 'fine') note.textContent = '정면 악동 후디 512. 얼굴이 없으면 이 그림 그대로입니다. 입은 그린 미소가 둥글게 벌어지고, 웃음은 더 넓으며, 오므리면 동그랗습니다. 볼은 부풀리지 않습니다. 기본 캐릭터는 여우 V9.2입니다.';
   }
   if (window.__refreshLinkUrls) window.__refreshLinkUrls();
   const lab = $('rigDebugLabel'); if (lab) lab.hidden = m.mode !== 'fine';

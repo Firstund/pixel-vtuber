@@ -61,19 +61,23 @@ function paintEyes(out, parts, w, state) {
   const neutral = parts && parts.lidsN;
   const happy = parts && parts.lidsH;
   if (!neutral || !neutral.length) return;
+  const boxes = (parts && parts.boxes) || LID_BOX;
   const smile = state.smile || 0;
   for (const key of ['L', 'R']) {
     const idx = lidIndex(key === 'L' ? state.openL : state.openR);
     if (idx <= 0) continue;
     const happyLid = smile > 0.55 && idx >= 2 && happy && happy[idx];
-    blitBox(out, happyLid || neutral[idx], w, LID_BOX[key]);
+    blitBox(out, happyLid || neutral[idx], w, boxes[key]);
   }
 }
 
-function paintGaze(out, neutral, iris, w, state) {
+function paintGaze(out, neutral, iris, w, state, parts) {
   if (!iris) return;
-  const dx = clamp(Math.round(-(state.gx || 0) * 2), -2, 2);
-  const dy = clamp(Math.round(-(state.gy || 0)), -1, 1);
+  const gaze = (parts && parts.gazePx) || 2;
+  const dyMax = (parts && parts.gazePy) || 1;
+  const dx = clamp(Math.round(-(state.gx || 0) * gaze), -gaze, gaze);
+  const dy = clamp(Math.round(-(state.gy || 0) * dyMax), -dyMax, dyMax);
+  const sclera = (parts && parts.sclera) || WHITE;
   if (dx === 0 && dy === 0) return;
   const n = w * w;
   const from = [];
@@ -97,7 +101,7 @@ function paintGaze(out, neutral, iris, w, state) {
   for (const p of from) {
     if (placed.has(p)) continue;
     const i = p * 4;
-    out[i] = WHITE[0]; out[i + 1] = WHITE[1]; out[i + 2] = WHITE[2]; out[i + 3] = 255;
+    out[i] = sclera[0]; out[i + 1] = sclera[1]; out[i + 2] = sclera[2]; out[i + 3] = 255;
   }
   for (const [dest, src] of placed) {
     if (dest === src) continue;
@@ -158,11 +162,13 @@ function paintMouth(out, parts, w, state) {
   blitPatch(out, frames[idx], w);
 }
 
-function paintBrows(out, neutral, w, state) {
+function paintBrows(out, neutral, w, state, parts) {
+  const maxDy = (parts && parts.browPx) || 1;
   const lift = clamp((state.browOut || 0) - (state.browDown || 0), -1, 1);
-  const dy = clamp(Math.round(-lift), -1, 1);
+  const dy = clamp(Math.round(-lift * maxDy), -maxDy, maxDy);
   if (dy === 0) return;
-  for (const box of Object.values(FRONT_BROWS)) {
+  const boxes = (parts && parts.brows) || FRONT_BROWS;
+  for (const box of Object.values(boxes)) {
     const marks = [];
     for (let y = box.y0; y < box.y1; y++) {
       for (let x = box.x0; x < box.x1; x++) {
@@ -192,9 +198,9 @@ export function renderFront(neutral, parts, w, h, state) {
   const s = state || FRONT_REST;
   const out = new Uint8ClampedArray(neutral);
   paintEyes(out, parts || {}, w, s);
-  paintGaze(out, neutral, parts && parts.iris, w, s);
+  paintGaze(out, neutral, parts && parts.iris, w, s, parts);
   paintMouth(out, parts || {}, w, s);
-  paintBrows(out, neutral, w, s);
+  paintBrows(out, neutral, w, s, parts);
   return out;
 }
 

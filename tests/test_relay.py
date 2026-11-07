@@ -225,6 +225,84 @@ if (shift < 8) process.exit(12);
         self.assertEqual(run.returncode, 0, run.stderr[-500:] + run.stdout[-500:])
 
 
+    def test_male256_is_native_and_rest_is_exact(self):
+        self.assertIn('male256', relay.CHARS)
+        self.assertEqual(relay.DEFAULT_CHAR, 'fox92')
+        self.assertIn('value="male256"', (ROOT / 'index.html').read_text())
+        def wh(path):
+            blob = (ROOT / path).read_bytes()
+            return struct.unpack('>II', blob[16:24])
+        self.assertEqual(wh('assets/male256/neutral.png'), (256, 256))
+        script = r'''
+import { readFileSync } from "node:fs";
+import { renderFront, FRONT_REST } from "./js/front-face.js";
+const read = (name) => new Uint8ClampedArray(readFileSync(name));
+const src = read("/tmp/m256-neutral.rgba");
+const mouths = [];
+for (let a = 0; a < 9; a++) for (let s = 0; s < 5; s++) mouths.push(read(`/tmp/m256-m-${String(a).padStart(2,"0")}-${s}.rgba`));
+const lidsN = [], lidsH = [];
+for (let i = 0; i < 5; i++) { lidsN.push(read(`/tmp/m256-lid-n-${i}.rgba`)); lidsH.push(read(`/tmp/m256-lid-h-${i}.rgba`)); }
+const parts = {
+  iris: read("/tmp/m256-iris.rgba"), mouths, lidsN, lidsH,
+  mouthGrid: { aperture: 9, shapes: 5 },
+  gazePx: 1, gazePy: 1, browPx: 1, sclera: [243, 212, 180],
+  boxes: { L: {x0:96,y0:88,x1:120,y1:110}, R: {x0:140,y0:82,x1:166,y1:108} },
+};
+const rest = renderFront(src, parts, 256, 256, FRONT_REST);
+for (let i = 0; i < src.length; i++) if (src[i] !== rest[i]) process.exit(2);
+const turned = renderFront(src, parts, 256, 256, { ...FRONT_REST, yaw: 25, pitch: 15, roll: 10 });
+for (let i = 0; i < src.length; i++) if (src[i] !== turned[i]) process.exit(3);
+const puff = renderFront(src, parts, 256, 256, { ...FRONT_REST, puff: 1 });
+for (let i = 0; i < src.length; i++) if (src[i] !== puff[i]) process.exit(4);
+function changed(buf) {
+  let n = 0;
+  for (let i = 0; i < src.length; i += 4) if (buf[i] !== src[i] || buf[i+1] !== src[i+1] || buf[i+2] !== src[i+2]) n++;
+  return n;
+}
+const tiny = changed(renderFront(src, parts, 256, 256, { ...FRONT_REST, jaw: 0.12 }));
+const wide = changed(renderFront(src, parts, 256, 256, { ...FRONT_REST, jaw: 1 }));
+const grin = changed(renderFront(src, parts, 256, 256, { ...FRONT_REST, jaw: 0.8, smile: 0.9 }));
+const round = changed(renderFront(src, parts, 256, 256, { ...FRONT_REST, jaw: 0.8, funnel: 0.9 }));
+if (!(tiny > 8 && wide > tiny)) process.exit(5);
+if (!(grin > 0 && round > 0)) process.exit(6);
+const shut = changed(renderFront(src, parts, 256, 256, { ...FRONT_REST, jaw: 0.9, close: 1 }));
+if (shut !== 0) process.exit(7);
+const back = renderFront(src, parts, 256, 256, FRONT_REST);
+for (let i = 0; i < src.length; i++) if (src[i] !== back[i]) process.exit(8);
+if (src[3] !== 0 || src[(255 * 256 + 255) * 4 + 3] !== 0) process.exit(9);
+const blink = changed(renderFront(src, parts, 256, 256, { ...FRONT_REST, openL: 0, openR: 0 }));
+const half = changed(renderFront(src, parts, 256, 256, { ...FRONT_REST, openL: 0.5, openR: 0.5 }));
+const wink = renderFront(src, parts, 256, 256, { ...FRONT_REST, openL: 0, openR: 1 });
+if (!(blink > half && half > 10)) process.exit(10);
+let left = 0, right = 0;
+for (let y = 90; y < 110; y++) for (let x = 98; x < 118; x++) {
+  const i = (y * 256 + x) * 4;
+  if (wink[i] !== src[i]) left++;
+}
+for (let y = 84; y < 108; y++) for (let x = 142; x < 164; x++) {
+  const i = (y * 256 + x) * 4;
+  if (wink[i] !== src[i]) right++;
+}
+if (left < 15 || right !== 0) process.exit(11);
+'''
+        try:
+            from PIL import Image
+        except ImportError:
+            self.skipTest('Pillow is not installed')
+        def dump(name, rel):
+            Path(name).write_bytes(Image.open(ROOT / rel).convert('RGBA').tobytes())
+        dump('/tmp/m256-neutral.rgba', 'assets/male256/neutral.png')
+        dump('/tmp/m256-iris.rgba', 'assets/male256/iris.png')
+        for a in range(9):
+            for s in range(5):
+                dump(f'/tmp/m256-m-{a:02d}-{s}.rgba', f'assets/male256/expr/m-{a:02d}-{s}.png')
+        for i in range(5):
+            dump(f'/tmp/m256-lid-n-{i}.rgba', f'assets/male256/expr/lid-n-{i}.png')
+            dump(f'/tmp/m256-lid-h-{i}.rgba', f'assets/male256/expr/lid-h-{i}.png')
+        run = subprocess.run(['node', '--input-type=module', '-e', script], cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(run.returncode, 0, run.stderr[-400:] + run.stdout[-200:])
+
+
 class SanitizeTests(unittest.TestCase):
     def test_fine_state_is_optional_and_stripped(self):
         old = vtuber_payload()
