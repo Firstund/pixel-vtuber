@@ -177,6 +177,36 @@ test('display page takes no camera and follows the other browser', { timeout: 12
     clearInterval(timer);
     pub.close();
 
+    await a.send('Page.navigate', { url: `${base}/?role=display&obs=1&char=male1` });
+    await waitFor(a, `window.__char === 'male1' && document.getElementById('char').value === 'male1'`, 20000);
+    const maleNeutral = await evaljs(a, `(() => { const c = document.getElementById('c'); const d = c.getContext('2d').getImageData(0,0,c.width,c.height).data; let n=0; for (let i=0;i<d.length;i+=16) n = (n + d[i] + d[i+1] + d[i+2]) >>> 0; return n; })()`);
+    const malePub = new WebSocket(`ws://127.0.0.1:${httpPort}/ws`);
+    await once(malePub, 'open');
+    malePub.send(JSON.stringify({ type: 'hello', role: 'track', room: 'vtuber' }));
+    const maleFine = { jaw: 0.9, smile: 0.4, frown: 0, funnel: 0, close: 0, openL: 0, openR: 1, gx: 0.8, gy: 0, browIn: 0, browOut: 0.2, browDown: 0, yaw: 18, pitch: 4, roll: 0, wink: 'L' };
+    const maleTimer = setInterval(() => {
+      malePub.send(JSON.stringify({
+        type: 'state', room: 'vtuber',
+        payload: {
+          kind: 'vtuber', seq: 3, face: true,
+          b: { jaw: 0.9, funnel: 0, smile: 0.4, blink: 0.5, blinkL: 1, blinkR: 0, gx: 0.8, gy: 0, browDown: 0, browOuter: 0.2, brow: 0, wide: 0, yaw: 18, pitch: 4, roll: 0, stretch: 0, smileAsym: 0, puff: 0, squint: 0 },
+          fine: maleFine, micOn: false, micScore: 0, expr: 'auto', react: null,
+          cfg: { char: 'male1', mirror: false, choppy: true, breath: true, autoBlink: true, micExpr: false, props: [] },
+        },
+      }));
+    }, 40);
+    await waitFor(a, `document.getElementById('pose').textContent.includes('18.0')`, 6000);
+    const maleMoved = await evaljs(a, `(() => { const c = document.getElementById('c'); const d = c.getContext('2d').getImageData(0,0,c.width,c.height).data; let n=0; for (let i=0;i<d.length;i+=16) n = (n + d[i] + d[i+1] + d[i+2]) >>> 0; return n; })()`);
+    assert.notEqual(maleMoved, maleNeutral);
+    assert.equal(await evaljs(a, `window.__mediaRequests`), 0);
+    const maleUrls = await evaljs(a, `window.__linkUrls`);
+    assert.match(maleUrls.track, /char=male1/);
+    assert.match(maleUrls.display, /role=display/);
+    assert.match(maleUrls.display, /char=male1/);
+    await shot(a, 'vtuber-display-male1.png');
+    clearInterval(maleTimer);
+    malePub.close();
+
     await b.send('Page.navigate', { url: `${base}/player/?role=control&shuffle=0&vol=0.5&cat=opening` });
     await a.send('Page.navigate', { url: `${base}/player/?role=display&obs=1` });
     await waitFor(b, `window.__pv && document.getElementById('title').textContent.includes('문이 열리는 시간')`);
