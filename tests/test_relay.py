@@ -238,13 +238,12 @@ import { readFileSync } from "node:fs";
 import { renderFront, FRONT_REST } from "./js/front-face.js";
 const read = (name) => new Uint8ClampedArray(readFileSync(name));
 const src = read("/tmp/m256-neutral.rgba");
-const mouths = [];
-for (let a = 0; a < 9; a++) for (let s = 0; s < 5; s++) mouths.push(read(`/tmp/m256-m-${String(a).padStart(2,"0")}-${s}.rgba`));
+const mouths = JSON.parse(readFileSync("/tmp/m256-mouths.json", "utf8")).map(read);
+const mouthPoses = JSON.parse(readFileSync("/tmp/m256-poses.json", "utf8"));
 const lidsN = [], lidsH = [];
 for (let i = 0; i < 5; i++) { lidsN.push(read(`/tmp/m256-lid-n-${i}.rgba`)); lidsH.push(read(`/tmp/m256-lid-h-${i}.rgba`)); }
 const parts = {
-  iris: read("/tmp/m256-iris.rgba"), mouths, lidsN, lidsH,
-  mouthGrid: { aperture: 9, shapes: 5 },
+  iris: read("/tmp/m256-iris.rgba"), mouths, lidsN, lidsH, mouthPoses,
   gazePx: 1, gazePy: 1, browPx: 1, sclera: [243, 212, 180],
   boxes: { L: {x0:96,y0:88,x1:120,y1:110}, R: {x0:140,y0:82,x1:166,y1:108} },
 };
@@ -259,14 +258,25 @@ function changed(buf) {
   for (let i = 0; i < src.length; i += 4) if (buf[i] !== src[i] || buf[i+1] !== src[i+1] || buf[i+2] !== src[i+2]) n++;
   return n;
 }
-const tiny = changed(renderFront(src, parts, 256, 256, { ...FRONT_REST, jaw: 0.12 }));
-const wide = changed(renderFront(src, parts, 256, 256, { ...FRONT_REST, jaw: 1 }));
-const grin = changed(renderFront(src, parts, 256, 256, { ...FRONT_REST, jaw: 0.8, smile: 0.9 }));
-const round = changed(renderFront(src, parts, 256, 256, { ...FRONT_REST, jaw: 0.8, funnel: 0.9 }));
-if (!(tiny > 8 && wide > tiny)) process.exit(5);
-if (!(grin > 0 && round > 0)) process.exit(6);
-const shut = changed(renderFront(src, parts, 256, 256, { ...FRONT_REST, jaw: 0.9, close: 1 }));
-if (shut !== 0) process.exit(7);
+function bounds(buf) {
+  let x0 = 999, y0 = 999, x1 = -1, y1 = -1;
+  for (let y = 110; y < 150; y++) for (let x = 90; x < 180; x++) {
+    const i = (y * 256 + x) * 4;
+    const changed = buf[i] !== src[i] || buf[i + 1] !== src[i + 1] || buf[i + 2] !== src[i + 2];
+    if (changed && buf[i] < 120 && buf[i + 1] < 80) {
+      if (x < x0) x0 = x; if (y < y0) y0 = y; if (x > x1) x1 = x; if (y > y1) y1 = y;
+    }
+  }
+  return { y0, w: x1 - x0, h: y1 - y0 };
+}
+const A = bounds(renderFront(src, parts, 256, 256, { ...FRONT_REST, jaw: 0.85 }));
+const O = bounds(renderFront(src, parts, 256, 256, { ...FRONT_REST, jaw: 0.85, funnel: 0.9, pucker: 0 }));
+const I = bounds(renderFront(src, parts, 256, 256, { ...FRONT_REST, jaw: 0.85, stretch: 0.9 }));
+const laugh = bounds(renderFront(src, parts, 256, 256, { ...FRONT_REST, jaw: 0.85, smile: 0.9 }));
+const puck = bounds(renderFront(src, parts, 256, 256, { ...FRONT_REST, jaw: 0.2, pucker: 0.9, funnel: 0.9 }));
+if (!(O.w < A.w - 4 && I.w > A.w + 4 && I.h < A.h && laugh.y0 < A.y0 && puck.w < O.w)) process.exit(5);
+const pressed = changed(renderFront(src, parts, 256, 256, { ...FRONT_REST, close: 1 }));
+if (pressed < 10) process.exit(6);
 const back = renderFront(src, parts, 256, 256, FRONT_REST);
 for (let i = 0; i < src.length; i++) if (src[i] !== back[i]) process.exit(8);
 if (src[3] !== 0 || src[(255 * 256 + 255) * 4 + 3] !== 0) process.exit(9);
@@ -291,11 +301,16 @@ if (left < 15 || right !== 0) process.exit(11);
             self.skipTest('Pillow is not installed')
         def dump(name, rel):
             Path(name).write_bytes(Image.open(ROOT / rel).convert('RGBA').tobytes())
+        manifest = json.loads((ROOT / 'assets/male256/manifest.json').read_text())
         dump('/tmp/m256-neutral.rgba', 'assets/male256/neutral.png')
         dump('/tmp/m256-iris.rgba', 'assets/male256/iris.png')
-        for a in range(9):
-            for s in range(5):
-                dump(f'/tmp/m256-m-{a:02d}-{s}.rgba', f'assets/male256/expr/m-{a:02d}-{s}.png')
+        mouths = []
+        for i, rel in enumerate(manifest['mouths']):
+            raw = Image.open(ROOT / 'assets/male256' / rel).convert('RGBA').tobytes()
+            Path(f'/tmp/m256-pose-{i}.rgba').write_bytes(raw)
+            mouths.append(f'/tmp/m256-pose-{i}.rgba')
+        Path('/tmp/m256-mouths.json').write_text(json.dumps(mouths))
+        Path('/tmp/m256-poses.json').write_text(json.dumps(manifest['mouthPoses']))
         for i in range(5):
             dump(f'/tmp/m256-lid-n-{i}.rgba', f'assets/male256/expr/lid-n-{i}.png')
             dump(f'/tmp/m256-lid-h-{i}.rgba', f'assets/male256/expr/lid-h-{i}.png')

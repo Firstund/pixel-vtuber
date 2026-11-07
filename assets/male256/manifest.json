@@ -8,56 +8,48 @@
   "sourceNote": "Generated concept painting supplied as neutral-256.png. Not hand-drawn.",
   "texture": "neutral.png",
   "mouths": [
-    "expr/m-00-0.png",
-    "expr/m-00-1.png",
-    "expr/m-00-2.png",
-    "expr/m-00-3.png",
-    "expr/m-00-4.png",
-    "expr/m-01-0.png",
-    "expr/m-01-1.png",
-    "expr/m-01-2.png",
-    "expr/m-01-3.png",
-    "expr/m-01-4.png",
-    "expr/m-02-0.png",
-    "expr/m-02-1.png",
-    "expr/m-02-2.png",
-    "expr/m-02-3.png",
-    "expr/m-02-4.png",
-    "expr/m-03-0.png",
-    "expr/m-03-1.png",
-    "expr/m-03-2.png",
-    "expr/m-03-3.png",
-    "expr/m-03-4.png",
-    "expr/m-04-0.png",
-    "expr/m-04-1.png",
-    "expr/m-04-2.png",
-    "expr/m-04-3.png",
-    "expr/m-04-4.png",
-    "expr/m-05-0.png",
-    "expr/m-05-1.png",
-    "expr/m-05-2.png",
-    "expr/m-05-3.png",
-    "expr/m-05-4.png",
-    "expr/m-06-0.png",
-    "expr/m-06-1.png",
-    "expr/m-06-2.png",
-    "expr/m-06-3.png",
-    "expr/m-06-4.png",
-    "expr/m-07-0.png",
-    "expr/m-07-1.png",
-    "expr/m-07-2.png",
-    "expr/m-07-3.png",
-    "expr/m-07-4.png",
-    "expr/m-08-0.png",
-    "expr/m-08-1.png",
-    "expr/m-08-2.png",
-    "expr/m-08-3.png",
-    "expr/m-08-4.png"
+    "expr/pose-rest-00-c.png",
+    "expr/pose-press-40-c.png",
+    "expr/pose-press-75-c.png",
+    "expr/pose-press-100-c.png",
+    "expr/pose-part-30-c.png",
+    "expr/pose-part-55-c.png",
+    "expr/pose-part-80-c.png",
+    "expr/pose-A-35-c.png",
+    "expr/pose-A-60-c.png",
+    "expr/pose-A-85-c.png",
+    "expr/pose-A-100-c.png",
+    "expr/pose-A-60-l.png",
+    "expr/pose-A-60-r.png",
+    "expr/pose-A-100-l.png",
+    "expr/pose-A-100-r.png",
+    "expr/pose-O-35-c.png",
+    "expr/pose-O-60-c.png",
+    "expr/pose-O-85-c.png",
+    "expr/pose-O-100-c.png",
+    "expr/pose-pucker-40-c.png",
+    "expr/pose-pucker-70-c.png",
+    "expr/pose-pucker-100-c.png",
+    "expr/pose-I-35-c.png",
+    "expr/pose-I-60-c.png",
+    "expr/pose-I-85-c.png",
+    "expr/pose-I-100-c.png",
+    "expr/pose-smile-25-c.png",
+    "expr/pose-smile-50-c.png",
+    "expr/pose-smile-75-c.png",
+    "expr/pose-smile-100-c.png",
+    "expr/pose-smile-50-l.png",
+    "expr/pose-smile-50-r.png",
+    "expr/pose-smile-100-l.png",
+    "expr/pose-smile-100-r.png",
+    "expr/pose-laugh-55-c.png",
+    "expr/pose-laugh-80-c.png",
+    "expr/pose-laugh-100-c.png",
+    "expr/pose-laugh-80-l.png",
+    "expr/pose-laugh-80-r.png",
+    "expr/pose-laugh-100-l.png",
+    "expr/pose-laugh-100-r.png"
   ],
-  "mouthGrid": {
-    "aperture": 9,
-    "shapes": 5
-  },
   "lids": {
     "neutral": [
       "expr/lid-n-0.png",
@@ -125,5 +117,254 @@
     "blinkCompress": 0.92,
     "poseHoldMs": 40
   },
-  "note": "Native 256 frontal hoodie. Mouth and lids are measured on this painting. Head angles are not drawn. Cheek puff is not drawn. Generated concept, not hand-drawn."
+  "note": "Native 256 frontal hoodie. Mouth poses are separate shapes (rest, press, part, A, O, pucker, I, smile, laugh), not one smile stretched. Rest matches the painting. Head angles are not drawn. Cheek puff is not drawn. Generated concept, not hand-drawn.",
+  "mouthPoses": [
+    {
+      "id": "rest",
+      "open": 0,
+      "asym": 0,
+      "file": "expr/pose-rest-00-c.png"
+    },
+    {
+      "id": "press",
+      "open": 0.4,
+      "asym": 0,
+      "file": "expr/pose-press-40-c.png"
+    },
+    {
+      "id": "press",
+      "open": 0.75,
+      "asym": 0,
+      "file": "expr/pose-press-75-c.png"
+    },
+    {
+      "id": "press",
+      "open": 1.0,
+      "asym": 0,
+      "file": "expr/pose-press-100-c.png"
+    },
+    {
+      "id": "part",
+      "open": 0.3,
+      "asym": 0,
+      "file": "expr/pose-part-30-c.png"
+    },
+    {
+      "id": "part",
+      "open": 0.55,
+      "asym": 0,
+      "file": "expr/pose-part-55-c.png"
+    },
+    {
+      "id": "part",
+      "open": 0.8,
+      "asym": 0,
+      "file": "expr/pose-part-80-c.png"
+    },
+    {
+      "id": "A",
+      "open": 0.35,
+      "asym": 0,
+      "file": "expr/pose-A-35-c.png"
+    },
+    {
+      "id": "A",
+      "open": 0.6,
+      "asym": 0,
+      "file": "expr/pose-A-60-c.png"
+    },
+    {
+      "id": "A",
+      "open": 0.85,
+      "asym": 0,
+      "file": "expr/pose-A-85-c.png"
+    },
+    {
+      "id": "A",
+      "open": 1.0,
+      "asym": 0,
+      "file": "expr/pose-A-100-c.png"
+    },
+    {
+      "id": "A",
+      "open": 0.6,
+      "asym": -1,
+      "file": "expr/pose-A-60-l.png"
+    },
+    {
+      "id": "A",
+      "open": 0.6,
+      "asym": 1,
+      "file": "expr/pose-A-60-r.png"
+    },
+    {
+      "id": "A",
+      "open": 1.0,
+      "asym": -1,
+      "file": "expr/pose-A-100-l.png"
+    },
+    {
+      "id": "A",
+      "open": 1.0,
+      "asym": 1,
+      "file": "expr/pose-A-100-r.png"
+    },
+    {
+      "id": "O",
+      "open": 0.35,
+      "asym": 0,
+      "file": "expr/pose-O-35-c.png"
+    },
+    {
+      "id": "O",
+      "open": 0.6,
+      "asym": 0,
+      "file": "expr/pose-O-60-c.png"
+    },
+    {
+      "id": "O",
+      "open": 0.85,
+      "asym": 0,
+      "file": "expr/pose-O-85-c.png"
+    },
+    {
+      "id": "O",
+      "open": 1.0,
+      "asym": 0,
+      "file": "expr/pose-O-100-c.png"
+    },
+    {
+      "id": "pucker",
+      "open": 0.4,
+      "asym": 0,
+      "file": "expr/pose-pucker-40-c.png"
+    },
+    {
+      "id": "pucker",
+      "open": 0.7,
+      "asym": 0,
+      "file": "expr/pose-pucker-70-c.png"
+    },
+    {
+      "id": "pucker",
+      "open": 1.0,
+      "asym": 0,
+      "file": "expr/pose-pucker-100-c.png"
+    },
+    {
+      "id": "I",
+      "open": 0.35,
+      "asym": 0,
+      "file": "expr/pose-I-35-c.png"
+    },
+    {
+      "id": "I",
+      "open": 0.6,
+      "asym": 0,
+      "file": "expr/pose-I-60-c.png"
+    },
+    {
+      "id": "I",
+      "open": 0.85,
+      "asym": 0,
+      "file": "expr/pose-I-85-c.png"
+    },
+    {
+      "id": "I",
+      "open": 1.0,
+      "asym": 0,
+      "file": "expr/pose-I-100-c.png"
+    },
+    {
+      "id": "smile",
+      "open": 0.25,
+      "asym": 0,
+      "file": "expr/pose-smile-25-c.png"
+    },
+    {
+      "id": "smile",
+      "open": 0.5,
+      "asym": 0,
+      "file": "expr/pose-smile-50-c.png"
+    },
+    {
+      "id": "smile",
+      "open": 0.75,
+      "asym": 0,
+      "file": "expr/pose-smile-75-c.png"
+    },
+    {
+      "id": "smile",
+      "open": 1.0,
+      "asym": 0,
+      "file": "expr/pose-smile-100-c.png"
+    },
+    {
+      "id": "smile",
+      "open": 0.5,
+      "asym": -1,
+      "file": "expr/pose-smile-50-l.png"
+    },
+    {
+      "id": "smile",
+      "open": 0.5,
+      "asym": 1,
+      "file": "expr/pose-smile-50-r.png"
+    },
+    {
+      "id": "smile",
+      "open": 1.0,
+      "asym": -1,
+      "file": "expr/pose-smile-100-l.png"
+    },
+    {
+      "id": "smile",
+      "open": 1.0,
+      "asym": 1,
+      "file": "expr/pose-smile-100-r.png"
+    },
+    {
+      "id": "laugh",
+      "open": 0.55,
+      "asym": 0,
+      "file": "expr/pose-laugh-55-c.png"
+    },
+    {
+      "id": "laugh",
+      "open": 0.8,
+      "asym": 0,
+      "file": "expr/pose-laugh-80-c.png"
+    },
+    {
+      "id": "laugh",
+      "open": 1.0,
+      "asym": 0,
+      "file": "expr/pose-laugh-100-c.png"
+    },
+    {
+      "id": "laugh",
+      "open": 0.8,
+      "asym": -1,
+      "file": "expr/pose-laugh-80-l.png"
+    },
+    {
+      "id": "laugh",
+      "open": 0.8,
+      "asym": 1,
+      "file": "expr/pose-laugh-80-r.png"
+    },
+    {
+      "id": "laugh",
+      "open": 1.0,
+      "asym": -1,
+      "file": "expr/pose-laugh-100-l.png"
+    },
+    {
+      "id": "laugh",
+      "open": 1.0,
+      "asym": 1,
+      "file": "expr/pose-laugh-100-r.png"
+    }
+  ],
+  "mouthModel": "poses"
 }

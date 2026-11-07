@@ -155,10 +155,75 @@ export function mouthCell(state, grid) {
   return ai * S + si;
 }
 
+// Pose families for the 256 mouth. Rest is the only empty frame.
+// These are blendshape shapes, not recognized speech sounds.
+export function selectMouthPose(state) {
+  const jaw = clamp(state.jaw || 0, 0, 1);
+  const smile = clamp(state.smile || 0, 0, 1);
+  const funnel = clamp(state.funnel || 0, 0, 1);
+  const pucker = clamp(state.pucker || 0, 0, 1);
+  const stretch = clamp(state.stretch || 0, 0, 1);
+  const close = clamp(state.close || 0, 0, 1);
+  const frown = clamp(state.frown || 0, 0, 1);
+  const asym = clamp(state.smileAsym || 0, -1, 1);
+  if (jaw < 0.06 && smile < 0.12 && funnel < 0.12 && pucker < 0.12 && stretch < 0.12 && close < 0.2 && frown < 0.2) {
+    return { id: 'rest', open: 0, asym: 0 };
+  }
+  if (close > 0.5 && jaw * (1 - close) < 0.22 && Math.max(smile, funnel, pucker, stretch) < 0.4) {
+    return { id: 'press', open: close, asym: 0 };
+  }
+  const sPuck = pucker;
+  const sO = Math.max(0, funnel - pucker * 0.55);
+  const sI = stretch * (1 - smile * 0.5);
+  const sLaugh = smile > 0.55 && jaw > 0.55 ? Math.min(smile, jaw) : 0;
+  const sSmile = sLaugh > 0 ? 0 : smile * (1 - Math.max(funnel, pucker) * 0.45);
+  const sA = jaw * (1 - Math.max(sPuck, sO, sI, sSmile, sLaugh) * 0.85);
+  const scores = [
+    ['pucker', sPuck], ['O', sO], ['I', sI], ['laugh', sLaugh], ['smile', sSmile], ['A', sA],
+  ];
+  let id = 'A';
+  let best = -1;
+  for (const [name, sc] of scores) if (sc > best) { best = sc; id = name; }
+  if (best < 0.12 && jaw < 0.18) return { id: 'rest', open: 0, asym: 0 };
+  if (id === 'A' && jaw < 0.28 && smile < 0.2) id = 'part';
+  let open = jaw;
+  if (id === 'O') open = Math.max(jaw, funnel);
+  else if (id === 'pucker') open = Math.max(jaw * 0.45, pucker);
+  else if (id === 'I') open = Math.max(stretch, jaw * 0.4);
+  else if (id === 'smile') open = Math.max(jaw, smile * 0.4);
+  else if (id === 'laugh') open = Math.max(jaw, 0.65);
+  else if (id === 'part') open = Math.max(jaw, 0.3);
+  let corner = 0;
+  if ((id === 'smile' || id === 'laugh' || id === 'A') && Math.abs(asym) > 0.35) corner = asym > 0 ? 1 : -1;
+  return { id, open: clamp(open, 0, 1), asym: corner };
+}
+
+function poseIndex(state, poses) {
+  const want = selectMouthPose(state);
+  const pick = (asym) => {
+    let best = -1;
+    let score = 1e9;
+    for (let i = 0; i < poses.length; i++) {
+      const p = poses[i];
+      if (p.id !== want.id || (p.asym || 0) !== asym) continue;
+      const d = Math.abs((p.open || 0) - want.open);
+      if (d < score) { score = d; best = i; }
+    }
+    return best;
+  };
+  const exact = pick(want.asym || 0);
+  if (exact >= 0) return exact;
+  const mid = pick(0);
+  return mid >= 0 ? mid : 0;
+}
+
 function paintMouth(out, parts, w, state) {
   const frames = parts && parts.mouths;
   if (!frames || !frames.length) return;
-  const idx = parts.mouthGrid ? mouthCell(state, parts.mouthGrid) : clamp(Math.round(mouthOpenAmount(state) * (frames.length - 1)), 0, frames.length - 1);
+  let idx;
+  if (parts.mouthPoses && parts.mouthPoses.length === frames.length) idx = poseIndex(state, parts.mouthPoses);
+  else if (parts.mouthGrid) idx = mouthCell(state, parts.mouthGrid);
+  else idx = clamp(Math.round(mouthOpenAmount(state) * (frames.length - 1)), 0, frames.length - 1);
   blitPatch(out, frames[idx], w);
 }
 

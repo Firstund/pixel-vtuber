@@ -30,10 +30,10 @@ const off = document.createElement('canvas'), octx = off.getContext('2d');      
 const hc = document.createElement('canvas'), hctx = hc.getContext('2d');        // 머리 그룹 (롤 회전용)
 import { mic, startMic, micTick, setRemoteMic } from './mic.js?v=20261106-link';
 import { createLink, packBlend, splitPageUrls, wsUrlFromLocation, DEFAULT_CHAR } from './link.js?v=20261106-fox92';
-import { createFineTrack, stepFine, packFine, applyPackedFine } from './fine-track.js?v=20261107-male';
+import { createFineTrack, stepFine, packFine, applyPackedFine } from './fine-track.js?v=20261107-poses';
 import { warpPortrait } from './portrait-warp.js?v=20261107-male';
 import { renderRowdy } from './rowdy-face.js?v=20261107-rowdy';
-import { renderFront } from './front-face.js?v=20261107-m256';
+import { renderFront } from './front-face.js?v=20261107-poses';
 import { createTail, tailStep } from './tail.js?v=20261028-v93';
 import { createEars, earStep } from './ears.js?v=20261028-v93';
 const earSt = createEars(); let earLast = 0;
@@ -130,6 +130,7 @@ async function loadChar(key) {
         sclera: m.sclera,
         boxes: m.boxes,
         brows: m.brows,
+        mouthPoses: m.mouthPoses,
       };
     }
   }
@@ -140,7 +141,7 @@ async function loadChar(key) {
   const note = $('rigNote');
   if (note) {
     note.hidden = m.mode !== 'fine';
-    if (m.mode === 'fine' && key === 'male256') note.textContent = '악동 후디 256. 이 그림은 생성 원화입니다. 입은 그 미소가 둥글게 열리고, 눈은 속눈썹 곡선으로 감깁니다. 고개 회전과 머리카락 따라가기는 겹침 그림이 없어 그리지 않습니다. 볼은 부풀리지 않습니다. 기본 캐릭터는 여우 V9.2입니다.';
+    if (m.mode === 'fine' && key === 'male256') note.textContent = '악동 후디 256. 생성 원화입니다. 턱은 세로로 긴 입, 오므리면 둥근 입, 옆으로 벌리면 납작한 입, 웃으면 입꼬리가 올라갑니다. 소리 인식은 아닙니다. 볼은 부풀리지 않습니다. 기본은 여우 V9.2입니다.';
     else if (m.mode === 'fine') note.textContent = '정면 악동 후디 512. 얼굴이 없으면 이 그림 그대로입니다. 입은 그린 미소가 둥글게 벌어지고, 웃음은 더 넓으며, 오므리면 동그랗습니다. 볼은 부풀리지 않습니다. 기본 캐릭터는 여우 V9.2입니다.';
   }
   if (window.__refreshLinkUrls) window.__refreshLinkUrls();
@@ -701,6 +702,7 @@ function readResult(r) {
   const m = {}; for (const c of r.faceBlendshapes[0].categories) m[c.categoryName] = c.score;
   const out = {
     jaw: m.jawOpen || 0, funnel: Math.max(m.mouthFunnel || 0, m.mouthPucker || 0),
+    pucker: m.mouthPucker || 0,
     smile: ((m.mouthSmileLeft || 0) + (m.mouthSmileRight || 0)) / 2,
     close: m.mouthClose || 0,
     blink: Math.max(m.eyeBlinkLeft || 0, m.eyeBlinkRight || 0) * 0.5 + ((m.eyeBlinkLeft || 0) + (m.eyeBlinkRight || 0)) / 4,
