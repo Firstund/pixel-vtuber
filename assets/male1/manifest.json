@@ -1,19 +1,23 @@
 {
-  "name": "악동 후디 512",
+  "name": "악동 후디 512 정면",
   "S": 512,
   "mode": "fine",
   "art": "portrait",
-  "renderer": "rowdy",
-  "artRevision": "rowdy-plus",
+  "renderer": "front",
+  "artRevision": "front-v2",
   "texture": "neutral.png",
   "source": "source-1024.png",
+  "closed": "eyes-closed.png",
+  "mouths": ["mouth-1.png", "mouth-2.png", "mouth-3.png"],
+  "grin": "mouth-grin.png",
+  "iris": "iris.png",
   "layers": [],
   "regions": {
-    "eyeL": [188, 196, 226, 211],
-    "eyeR": [263, 177, 305, 195],
-    "browL": [196, 178, 226, 194],
-    "browR": [266, 156, 318, 176],
-    "mouth": [230, 226, 286, 256]
+    "eyeL": [188, 176, 238, 214],
+    "eyeR": [268, 170, 322, 208],
+    "browL": [192, 164, 242, 186],
+    "browR": [270, 156, 326, 178],
+    "mouth": [220, 229, 292, 269]
   },
   "track": {
     "S": 512,
@@ -22,11 +26,11 @@
     "rollSteps": 5,
     "eyelidSteps": 5,
     "mouthSteps": 8,
-    "browSteps": 5,
+    "browSteps": 3,
     "gazePx": 2,
-    "blinkCompress": 0.85,
+    "blinkCompress": 0.92,
     "mouthScale": 0.18,
-    "mouthOpenPx": 7,
+    "mouthOpenPx": 0,
     "browPx": 1,
     "smilePx": 0,
     "poseHoldMs": 40,
@@ -36,5 +40,5 @@
     "mouthDead": 0.035,
     "eyelidDead": 0.06
   },
-  "note": "Approved rowdy hoodie, 512, transparent cutout of plus-512. Rest pixels match that painting. Blink covers the measured eye opening only. Jaw above rest paints a mouth interior under the existing teeth. Head motion shifts the whole sprite by at most 2px. Not a VRoid mesh. Separate drawn eyelids, teeth interiors, and hair sheets were not in the source."
+  "note": "Front-facing rowdy hoodie. Neutral is the transparent 512 master. Closed eyelids and mouth sizes are patches aligned to that face. Head angles are tracked and not drawn."
 }

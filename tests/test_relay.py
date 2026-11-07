@@ -68,72 +68,89 @@ class DefaultCharTests(unittest.TestCase):
         self.assertEqual(wh('assets/fox92/base.png')[0], 256)
         self.assertEqual(wh('assets/male1/neutral.png'), (512, 512))
         self.assertEqual(wh('assets/male1/source-1024.png'), (1024, 1024))
-        # Rest pose of the approved painting must be byte-identical.
+        # Rest pose matches the frontal painting. Pose angles do not move pixels.
         script = r'''
 import { readFileSync } from "node:fs";
-import { renderRowdy, countIris, ROWDY_EYES, ROWDY_REST } from "./js/rowdy-face.js";
-const src = new Uint8ClampedArray(readFileSync("/tmp/male-neutral.rgba"));
-const rest = renderRowdy(src, 512, 512, ROWDY_REST);
+import { renderFront, FRONT_REST } from "./js/front-face.js";
+const read = (name) => new Uint8ClampedArray(readFileSync(name));
+const src = read("/tmp/male-neutral.rgba");
+const parts = {
+  closed: read("/tmp/male-closed.rgba"),
+  small: read("/tmp/male-mouth1.rgba"),
+  med: read("/tmp/male-mouth2.rgba"),
+  wide: read("/tmp/male-mouth3.rgba"),
+  grin: read("/tmp/male-grin.rgba"),
+  iris: read("/tmp/male-iris.rgba"),
+};
+const rest = renderFront(src, parts, 512, 512, FRONT_REST);
 for (let i = 0; i < src.length; i++) if (src[i] !== rest[i]) process.exit(2);
-const blink = renderRowdy(src, 512, 512, { ...ROWDY_REST, openL: 0, openR: 0 });
-if (countIris(blink, 512, ROWDY_EYES.L) !== 0 || countIris(blink, 512, ROWDY_EYES.R) !== 0) process.exit(3);
-const back = renderRowdy(src, 512, 512, ROWDY_REST);
-for (let i = 0; i < src.length; i++) if (src[i] !== back[i]) process.exit(4);
-const restL = countIris(src, 512, ROWDY_EYES.L);
-const restR = countIris(src, 512, ROWDY_EYES.R);
-if (restL < 20 || restR < 20) process.exit(5);
-let prev = restL + restR;
-for (const open of [0.85, 0.6, 0.35, 0.15, 0]) {
-  const frame = renderRowdy(src, 512, 512, { ...ROWDY_REST, openL: open, openR: open });
-  const n = countIris(frame, 512, ROWDY_EYES.L) + countIris(frame, 512, ROWDY_EYES.R);
-  if (n > prev) process.exit(6);
-  prev = n;
-}
-if (prev !== 0) process.exit(7);
-const wink = renderRowdy(src, 512, 512, { ...ROWDY_REST, openL: 0, openR: 1 });
-if (countIris(wink, 512, ROWDY_EYES.L) !== 0 || countIris(wink, 512, ROWDY_EYES.R) < restR) process.exit(8);
-function mouthPx(buf) {
+const turned = renderFront(src, parts, 512, 512, { ...FRONT_REST, yaw: 30, pitch: 20, roll: 15 });
+for (let i = 0; i < src.length; i++) if (src[i] !== turned[i]) process.exit(3);
+function irisCount(buf) {
   let n = 0;
-  for (let i = 0; i < buf.length; i += 4) if (buf[i] === 87 && buf[i + 1] === 36 && buf[i + 2] === 50) n++;
+  for (let i = 0; i < parts.iris.length; i += 4) {
+    if (parts.iris[i + 3] < 128) continue;
+    if (Math.abs(buf[i] - src[i]) < 8 && Math.abs(buf[i + 1] - src[i + 1]) < 8) n++;
+  }
   return n;
 }
-const mid = renderRowdy(src, 512, 512, { ...ROWDY_REST, jaw: 0.45 });
-const wide = renderRowdy(src, 512, 512, { ...ROWDY_REST, jaw: 1 });
-if (!(mouthPx(wide) > mouthPx(mid) && mouthPx(mid) > mouthPx(src))) process.exit(9);
-const shut = renderRowdy(src, 512, 512, { ...ROWDY_REST, close: 1 });
-let hidden = 0;
-for (let y = 226; y < 256; y++) for (let x = 230; x < 286; x++) {
+const restIris = irisCount(src);
+if (restIris < 40) process.exit(4);
+let prev = restIris;
+for (const open of [0.85, 0.55, 0.3, 0.12, 0]) {
+  const frame = renderFront(src, parts, 512, 512, { ...FRONT_REST, openL: open, openR: open });
+  const n = irisCount(frame);
+  if (n > prev) process.exit(5);
+  prev = n;
+}
+if (prev !== 0) process.exit(6);
+const back = renderFront(src, parts, 512, 512, FRONT_REST);
+for (let i = 0; i < src.length; i++) if (src[i] !== back[i]) process.exit(7);
+const wink = renderFront(src, parts, 512, 512, { ...FRONT_REST, openL: 0, openR: 1 });
+let leftGone = 0, rightKept = 0;
+for (let y = 176; y < 214; y++) for (let x = 188; x < 238; x++) {
   const i = (y * 512 + x) * 4;
-  if (src[i] > 230 && src[i + 1] > 200 && shut[i] < 200) hidden++;
+  if (parts.iris[i + 3] > 128 && Math.abs(wink[i] - src[i]) > 20) leftGone++;
 }
-if (hidden < 15) process.exit(10);
-function irisX(buf, spans) {
-  let n = 0, s = 0;
-  for (const row of spans) {
-    const y = row[0];
-    for (let r = 1; r < row.length; r++) {
-      for (let x = row[r][0]; x <= row[r][1]; x++) {
-        const i = (y * 512 + x) * 4;
-        if (Math.abs(buf[i] - 219) <= 16 && Math.abs(buf[i + 1] - 149) <= 16 && buf[i] < 235) { n++; s += x; }
-      }
-    }
-  }
-  return n ? s / n : 0;
+for (let y = 170; y < 208; y++) for (let x = 268; x < 322; x++) {
+  const i = (y * 512 + x) * 4;
+  if (parts.iris[i + 3] > 128 && wink[i] === src[i]) rightKept++;
 }
-const gazed = renderRowdy(src, 512, 512, { ...ROWDY_REST, gx: 1 });
-if (!(irisX(gazed, ROWDY_EYES.L) < irisX(src, ROWDY_EYES.L) - 0.4)) process.exit(11);
-if (countIris(gazed, 512, ROWDY_EYES.L) < restL * 0.7) process.exit(12);
-if (src[3] !== 0 || src[(511 * 512 + 511) * 4 + 3] !== 0) process.exit(13);
+if (leftGone < 10 || rightKept < 10) process.exit(8);
+function changed(buf) {
+  let n = 0;
+  for (let i = 0; i < src.length; i += 4) if (buf[i] !== src[i] || buf[i + 1] !== src[i + 1] || buf[i + 2] !== src[i + 2]) n++;
+  return n;
+}
+const small = changed(renderFront(src, parts, 512, 512, { ...FRONT_REST, jaw: 0.3 }));
+const med = changed(renderFront(src, parts, 512, 512, { ...FRONT_REST, jaw: 0.55 }));
+const wide = changed(renderFront(src, parts, 512, 512, { ...FRONT_REST, jaw: 1 }));
+if (!(wide > med && med > small && small > 30)) process.exit(9);
+const hair = (40 * 512 + 250) * 4;
+const wideBuf = renderFront(src, parts, 512, 512, { ...FRONT_REST, jaw: 1, openL: 0 });
+if (wideBuf[hair] !== src[hair]) process.exit(10);
+if (src[3] !== 0 || src[(511 * 512 + 511) * 4 + 3] !== 0) process.exit(11);
+const gazed = renderFront(src, parts, 512, 512, { ...FRONT_REST, gx: 1 });
+let shift = 0;
+for (let i = 0; i < src.length; i += 4) if (parts.iris[i + 3] > 128 && gazed[i] !== src[i]) shift++;
+if (shift < 8) process.exit(12);
 '''
         try:
             from PIL import Image
         except ImportError:
             self.skipTest('Pillow is not installed')
-        raw = Image.open(ROOT / 'assets/male1/neutral.png').convert('RGBA').tobytes()
-        rgba = Path('/tmp/male-neutral.rgba')
-        rgba.write_bytes(raw)
-        run = subprocess.run(['node', '--input-type=module', '-e', script], cwd=ROOT)
-        self.assertEqual(run.returncode, 0)
+        def dump(name, rel):
+            raw = Image.open(ROOT / rel).convert('RGBA').tobytes()
+            Path(name).write_bytes(raw)
+        dump('/tmp/male-neutral.rgba', 'assets/male1/neutral.png')
+        dump('/tmp/male-closed.rgba', 'assets/male1/eyes-closed.png')
+        dump('/tmp/male-mouth1.rgba', 'assets/male1/mouth-1.png')
+        dump('/tmp/male-mouth2.rgba', 'assets/male1/mouth-2.png')
+        dump('/tmp/male-mouth3.rgba', 'assets/male1/mouth-3.png')
+        dump('/tmp/male-grin.rgba', 'assets/male1/mouth-grin.png')
+        dump('/tmp/male-iris.rgba', 'assets/male1/iris.png')
+        run = subprocess.run(['node', '--input-type=module', '-e', script], cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(run.returncode, 0, run.stderr[-500:] + run.stdout[-500:])
 
 
 class SanitizeTests(unittest.TestCase):

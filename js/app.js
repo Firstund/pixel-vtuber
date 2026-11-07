@@ -33,6 +33,7 @@ import { createLink, packBlend, splitPageUrls, wsUrlFromLocation, DEFAULT_CHAR }
 import { createFineTrack, stepFine, packFine, applyPackedFine } from './fine-track.js?v=20261107-male';
 import { warpPortrait } from './portrait-warp.js?v=20261107-male';
 import { renderRowdy } from './rowdy-face.js?v=20261107-rowdy';
+import { renderFront } from './front-face.js?v=20261107-front';
 import { createTail, tailStep } from './tail.js?v=20261028-v93';
 import { createEars, earStep } from './ears.js?v=20261028-v93';
 const earSt = createEars(); let earLast = 0;
@@ -97,6 +98,24 @@ async function loadChar(key) {
     pctx.drawImage(tex, 0, 0, m.S, m.S);
     ch.portrait = pctx.getImageData(0, 0, m.S, m.S).data;
     fineTrack = createFineTrack(); lastFineT = 0;
+    if (m.renderer === 'front') {
+      const loadPx = (file) => new Promise((res, rej) => {
+        const i = new Image();
+        i.onload = () => {
+          const c = document.createElement('canvas');
+          c.width = c.height = m.S;
+          const x = c.getContext('2d', { willReadFrequently: true });
+          x.drawImage(i, 0, 0, m.S, m.S);
+          res(x.getImageData(0, 0, m.S, m.S).data);
+        };
+        i.onerror = () => rej(new Error(file));
+        i.src = base + file;
+      });
+      const [closed, small, med, wide, grin, iris] = await Promise.all([
+        loadPx(m.closed), loadPx(m.mouths[0]), loadPx(m.mouths[1]), loadPx(m.mouths[2]), loadPx(m.grin), loadPx(m.iris),
+      ]);
+      ch.front = { closed, small, med, wide, grin, iris };
+    }
   }
   for (const c of [off, hc]) { c.width = c.height = ch.S; }
   octx.imageSmoothingEnabled = hctx.imageSmoothingEnabled = false;
@@ -105,7 +124,7 @@ async function loadChar(key) {
   const note = $('rigNote');
   if (note) {
     note.hidden = m.mode !== 'fine';
-    if (m.mode === 'fine') note.textContent = '악동 후디 512. 얼굴이 없을 때는 승인된 그림 그대로입니다. 눈은 그 눈구멍만 감기고, 입은 그려진 이 아래로 속이 열립니다. 고개는 그림 전체가 몇 픽셀 움직입니다. VRoid가 아닙니다. 기본 캐릭터는 여우 V9.2입니다.';
+    if (m.mode === 'fine') note.textContent = '정면 악동 후디 512. 얼굴이 없으면 이 그림 그대로입니다. 감긴 눈은 닫힌 눈꺼풀 선이고, 입은 같은 자리에서 작음·중간·크게 열리며 속과 혀가 있습니다. 고개 각도는 숫자만 두고 그림은 돌리지 않습니다. 기본 캐릭터는 여우 V9.2입니다.';
   }
   if (window.__refreshLinkUrls) window.__refreshLinkUrls();
   const lab = $('rigDebugLabel'); if (lab) lab.hidden = m.mode !== 'fine';
@@ -771,9 +790,11 @@ function drawPortrait(state) {
   if (!ch?.portrait) return;
   const S = ch.S;
   const posed = orientFine(state);
-  const warped = ch.m.renderer === 'rowdy'
-    ? renderRowdy(ch.portrait, S, S, posed)
-    : warpPortrait(ch.portrait, S, S, ch.m.regions, posed, ch.m.track);
+  const warped = ch.m.renderer === 'front'
+    ? renderFront(ch.portrait, ch.front, S, S, posed)
+    : ch.m.renderer === 'rowdy'
+      ? renderRowdy(ch.portrait, S, S, posed)
+      : warpPortrait(ch.portrait, S, S, ch.m.regions, posed, ch.m.track);
   const view = new ImageData(new Uint8ClampedArray(warped), S, S);
   octx.putImageData(view, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
