@@ -33,7 +33,7 @@ import { createLink, packBlend, splitPageUrls, wsUrlFromLocation, DEFAULT_CHAR }
 import { createFineTrack, stepFine, packFine, applyPackedFine } from './fine-track.js?v=20261107-male';
 import { warpPortrait } from './portrait-warp.js?v=20261107-male';
 import { renderRowdy } from './rowdy-face.js?v=20261107-rowdy';
-import { renderFront } from './front-face.js?v=20261107-front';
+import { renderFront } from './front-face.js?v=20261107-mouth';
 import { createTail, tailStep } from './tail.js?v=20261028-v93';
 import { createEars, earStep } from './ears.js?v=20261028-v93';
 const earSt = createEars(); let earLast = 0;
@@ -111,10 +111,10 @@ async function loadChar(key) {
         i.onerror = () => rej(new Error(file));
         i.src = base + file;
       });
-      const [closed, small, med, wide, grin, iris] = await Promise.all([
-        loadPx(m.closed), loadPx(m.mouths[0]), loadPx(m.mouths[1]), loadPx(m.mouths[2]), loadPx(m.grin), loadPx(m.iris),
+      const [closed, iris, ...mouths] = await Promise.all([
+        loadPx(m.closed), loadPx(m.iris), ...m.mouths.map(loadPx),
       ]);
-      ch.front = { closed, small, med, wide, grin, iris };
+      ch.front = { closed, iris, mouths };
     }
   }
   for (const c of [off, hc]) { c.width = c.height = ch.S; }
@@ -124,7 +124,7 @@ async function loadChar(key) {
   const note = $('rigNote');
   if (note) {
     note.hidden = m.mode !== 'fine';
-    if (m.mode === 'fine') note.textContent = '정면 악동 후디 512. 얼굴이 없으면 이 그림 그대로입니다. 감긴 눈은 닫힌 눈꺼풀 선이고, 입은 같은 자리에서 작음·중간·크게 열리며 속과 혀가 있습니다. 고개 각도는 숫자만 두고 그림은 돌리지 않습니다. 기본 캐릭터는 여우 V9.2입니다.';
+    if (m.mode === 'fine') note.textContent = '정면 악동 후디 512. 얼굴이 없으면 이 그림 그대로입니다. 입은 그려진 미소가 그대로 벌어집니다. 고개 각도는 숫자만 두고 그림은 돌리지 않습니다. 기본 캐릭터는 여우 V9.2입니다.';
   }
   if (window.__refreshLinkUrls) window.__refreshLinkUrls();
   const lab = $('rigDebugLabel'); if (lab) lab.hidden = m.mode !== 'fine';

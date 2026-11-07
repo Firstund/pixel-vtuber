@@ -8,8 +8,7 @@
   "texture": "neutral.png",
   "source": "source-1024.png",
   "closed": "eyes-closed.png",
-  "mouths": ["mouth-1.png", "mouth-2.png", "mouth-3.png"],
-  "grin": "mouth-grin.png",
+  "mouths": ["mouth-00.png", "mouth-01.png", "mouth-02.png", "mouth-03.png", "mouth-04.png", "mouth-05.png", "mouth-06.png", "mouth-07.png", "mouth-08.png", "mouth-09.png", "mouth-10.png", "mouth-11.png", "mouth-12.png", "mouth-13.png", "mouth-14.png", "mouth-15.png", "mouth-16.png", "mouth-17.png", "mouth-18.png", "mouth-19.png", "mouth-20.png", "mouth-21.png", "mouth-22.png"],
   "iris": "iris.png",
   "layers": [],
   "regions": {
@@ -17,7 +16,7 @@
     "eyeR": [268, 170, 322, 208],
     "browL": [192, 164, 242, 186],
     "browR": [270, 156, 326, 178],
-    "mouth": [220, 229, 292, 269]
+    "mouth": [235, 239, 284, 268]
   },
   "track": {
     "S": 512,
@@ -40,5 +39,5 @@
     "mouthDead": 0.035,
     "eyelidDead": 0.06
   },
-  "note": "Front-facing rowdy hoodie. Neutral is the transparent 512 master. Closed eyelids and mouth sizes are patches aligned to that face. Head angles are tracked and not drawn."
+  "note": "Front-facing rowdy hoodie. Neutral is the transparent 512 master. Closed eyelids are a lid-line patch. The mouth is the painted smile opening across 23 frames; frame 0 is empty. Head angles are tracked and not drawn."
 }

@@ -264,20 +264,6 @@ def write_assets(out_dir):
     patch[:, :, :3] = closed
     patch[:, :, 3] = np.where(diff, 255, 0)
     Image.fromarray(patch).save(out / 'eyes-closed.png')
-    mouths = {
-        'mouth-1.png': SRC + '/expression-04-mouth-small.png',
-        'mouth-2.png': SRC + '/expression-05-mouth-medium.png',
-        'mouth-3.png': SRC + '/expression-06-mouth-wide.png',
-        'mouth-grin.png': SRC + '/expression-09-wink.png',
-    }
-    for name, path in mouths.items():
-        img, n, kind = build_mouth(path)
-        rgba = np.zeros((*neu.shape[:2], 4), np.uint8)
-        d = np.any(img != neu, axis=2)
-        rgba[:, :, :3] = img
-        rgba[:, :, 3] = np.where(d, 255, 0)
-        Image.fromarray(rgba).save(out / name)
-        print(name, int(d.sum()), kind)
     iris = np.zeros((*neu.shape[:2], 4), np.uint8)
     for side, (x0, y0, x1, y1) in SOCKET.items():
         cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
@@ -292,6 +278,9 @@ def write_assets(out_dir):
                     iris[y, x] = (r, g, b, 255)
     Image.fromarray(iris).save(out / 'iris.png')
     print('iris', int((iris[:, :, 3] > 0).sum()), 'closed', int(diff.sum()))
+    # Mouth frames are the painted smile opening. Do not stamp expression tiles.
+    from build_mouth_seq import main as build_mouths
+    build_mouths()
 
 if __name__ == '__main__':
     write_assets('/workspace/assets/male1')

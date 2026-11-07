@@ -74,13 +74,12 @@ import { readFileSync } from "node:fs";
 import { renderFront, FRONT_REST } from "./js/front-face.js";
 const read = (name) => new Uint8ClampedArray(readFileSync(name));
 const src = read("/tmp/male-neutral.rgba");
+const mouths = [];
+for (let i = 0; i < 23; i++) mouths.push(read(`/tmp/male-mouth-${String(i).padStart(2,'0')}.rgba`));
 const parts = {
   closed: read("/tmp/male-closed.rgba"),
-  small: read("/tmp/male-mouth1.rgba"),
-  med: read("/tmp/male-mouth2.rgba"),
-  wide: read("/tmp/male-mouth3.rgba"),
-  grin: read("/tmp/male-grin.rgba"),
   iris: read("/tmp/male-iris.rgba"),
+  mouths,
 };
 const rest = renderFront(src, parts, 512, 512, FRONT_REST);
 for (let i = 0; i < src.length; i++) if (src[i] !== rest[i]) process.exit(2);
@@ -122,10 +121,63 @@ function changed(buf) {
   for (let i = 0; i < src.length; i += 4) if (buf[i] !== src[i] || buf[i + 1] !== src[i + 1] || buf[i + 2] !== src[i + 2]) n++;
   return n;
 }
-const small = changed(renderFront(src, parts, 512, 512, { ...FRONT_REST, jaw: 0.3 }));
-const med = changed(renderFront(src, parts, 512, 512, { ...FRONT_REST, jaw: 0.55 }));
-const wide = changed(renderFront(src, parts, 512, 512, { ...FRONT_REST, jaw: 1 }));
-if (!(wide > med && med > small && small > 30)) process.exit(9);
+function bounds(buf) {
+  let x0 = 999, y0 = 999, x1 = -1, y1 = -1, n = 0;
+  for (let y = 220; y < 290; y++) for (let x = 200; x < 330; x++) {
+    const i = (y * 512 + x) * 4;
+    if (buf[i] !== src[i] || buf[i + 1] !== src[i + 1] || buf[i + 2] !== src[i + 2]) {
+      n++; if (x < x0) x0 = x; if (y < y0) y0 = y; if (x > x1) x1 = x; if (y > y1) y1 = y;
+    }
+  }
+  return { n, x0, y0, x1, y1 };
+}
+const tiny = bounds(renderFront(src, parts, 512, 512, { ...FRONT_REST, jaw: 0.05 }));
+const mid = bounds(renderFront(src, parts, 512, 512, { ...FRONT_REST, jaw: 0.45 }));
+const wide = bounds(renderFront(src, parts, 512, 512, { ...FRONT_REST, jaw: 1 }));
+if (!(tiny.n > 20 && mid.n > tiny.n && wide.n > mid.n)) process.exit(9);
+// The opening stays on the painted smile (top near y=239) and grows downward.
+if (tiny.y0 < 238 || wide.y0 < 236 || wide.y1 <= mid.y1 || mid.y1 <= tiny.y1) process.exit(14);
+const shut = bounds(renderFront(src, parts, 512, 512, { ...FRONT_REST, jaw: 0.8, close: 1 }));
+if (shut.n !== 0) process.exit(15);
+const smiled = bounds(renderFront(src, parts, 512, 512, { ...FRONT_REST, smile: 0.9 }));
+if (!(smiled.n > 20 && smiled.n < wide.n)) process.exit(16);
+function mouthParts(buf) {
+  const diff = new Uint8Array(512 * 512);
+  for (let y = 220; y < 300; y++) for (let x = 180; x < 340; x++) {
+    const i = (y * 512 + x) * 4;
+    if (buf[i] !== src[i] || buf[i + 1] !== src[i + 1] || buf[i + 2] !== src[i + 2]) diff[y * 512 + x] = 1;
+  }
+  const seen = new Uint8Array(512 * 512);
+  let ncomp = 0;
+  for (let y = 220; y < 300; y++) for (let x = 180; x < 340; x++) {
+    const p = y * 512 + x;
+    if (!diff[p] || seen[p]) continue;
+    ncomp++;
+    const q = [p];
+    seen[p] = 1;
+    while (q.length) {
+      const c = q.pop();
+      const cy = (c / 512) | 0, cx = c % 512;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const ny = cy + dy, nx = cx + dx;
+        if (ny < 220 || ny >= 300 || nx < 180 || nx >= 340) continue;
+        const np = ny * 512 + nx;
+        if (diff[np] && !seen[np]) { seen[np] = 1; q.push(np); }
+      }
+    }
+  }
+  return ncomp;
+}
+for (const state of [
+  { jaw: 0.05 }, { jaw: 0.25 }, { jaw: 0.55 }, { jaw: 1 },
+  { jaw: 0.7, smile: 0.8 }, { jaw: 0.6, openL: 0, openR: 1 },
+  { smile: 0.9 }, { jaw: 0.15, close: 0.2 },
+]) {
+  const buf = renderFront(src, parts, 512, 512, { ...FRONT_REST, ...state });
+  if (mouthParts(buf) !== 1) process.exit(17);
+}
+const returned = renderFront(src, parts, 512, 512, { ...FRONT_REST, jaw: 0, smile: 0, close: 0 });
+for (let i = 0; i < src.length; i++) if (src[i] !== returned[i]) process.exit(18);
 const hair = (40 * 512 + 250) * 4;
 const wideBuf = renderFront(src, parts, 512, 512, { ...FRONT_REST, jaw: 1, openL: 0 });
 if (wideBuf[hair] !== src[hair]) process.exit(10);
@@ -144,11 +196,9 @@ if (shift < 8) process.exit(12);
             Path(name).write_bytes(raw)
         dump('/tmp/male-neutral.rgba', 'assets/male1/neutral.png')
         dump('/tmp/male-closed.rgba', 'assets/male1/eyes-closed.png')
-        dump('/tmp/male-mouth1.rgba', 'assets/male1/mouth-1.png')
-        dump('/tmp/male-mouth2.rgba', 'assets/male1/mouth-2.png')
-        dump('/tmp/male-mouth3.rgba', 'assets/male1/mouth-3.png')
-        dump('/tmp/male-grin.rgba', 'assets/male1/mouth-grin.png')
         dump('/tmp/male-iris.rgba', 'assets/male1/iris.png')
+        for i in range(23):
+            dump(f'/tmp/male-mouth-{i:02d}.rgba', f'assets/male1/mouth-{i:02d}.png')
         run = subprocess.run(['node', '--input-type=module', '-e', script], cwd=ROOT, capture_output=True, text=True)
         self.assertEqual(run.returncode, 0, run.stderr[-500:] + run.stdout[-500:])
 

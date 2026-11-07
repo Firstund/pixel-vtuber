@@ -101,58 +101,35 @@ function paintGaze(out, neutral, iris, w, state) {
   }
 }
 
-function mouthLevel(state) {
-  const jaw = clamp(state.jaw || 0, 0, 1);
-  const smile = clamp(state.smile || 0, 0, 1);
-  const shut = (state.close || 0) > 0.45 && jaw < 0.28;
-  if (shut) return { name: 'closed', t: 0 };
-  if (jaw < 0.18 && smile > 0.55) return { name: 'grin', t: clamp((smile - 0.55) / 0.35, 0, 1) };
-  if (jaw < 0.18) return { name: 'closed', t: 0 };
-  if (jaw < 0.42) return { name: 'small', t: clamp((jaw - 0.18) / 0.24, 0, 1), prev: 'closed' };
-  if (jaw < 0.7) return { name: 'med', t: clamp((jaw - 0.42) / 0.28, 0, 1), prev: 'small' };
-  return { name: 'wide', t: clamp((jaw - 0.7) / 0.3, 0, 1), prev: 'med' };
-}
-
-function blitPatch(out, patch, w, allow) {
+function blitPatch(out, patch, w) {
   if (!patch) return;
   const n = w * w;
   for (let p = 0; p < n; p++) {
     if (patch[p * 4 + 3] < 128) continue;
-    if (allow && !allow(p % w, (p / w) | 0)) continue;
     copyPx(out, patch, p * 4);
   }
 }
 
+// One mouth. Frame 0 is empty (the painted smile). Each later frame is that
+// same lip line opened one pixel further. No crossfade and no second shape.
+export function mouthOpenAmount(state) {
+  const jaw = clamp(state.jaw || 0, 0, 1);
+  const smile = clamp(state.smile || 0, 0, 1);
+  const close = clamp(state.close || 0, 0, 1);
+  let open = jaw * (1 - close);
+  if (close < 0.45) open = Math.max(open, Math.max(0, smile - 0.42) * 0.22);
+  return clamp(open, 0, 1);
+}
+
+export function mouthFrameIndex(state, count) {
+  if (!count) return 0;
+  return clamp(Math.round(mouthOpenAmount(state) * (count - 1)), 0, count - 1);
+}
+
 function paintMouth(out, parts, w, state) {
-  const level = mouthLevel(state);
-  const patch = {
-    closed: null,
-    grin: parts.grin,
-    small: parts.small,
-    med: parts.med,
-    wide: parts.wide,
-  }[level.name];
-  const prev = level.prev ? {
-    closed: null,
-    small: parts.small,
-    med: parts.med,
-  }[level.prev] : null;
-  if (level.name === 'grin') {
-    const cx = 256, cy = 249, rx = 36, ry = 20;
-    blitPatch(out, patch, w, (x, y) => Math.hypot((x - cx) / rx, (y - cy) / ry) <= Math.max(0.15, level.t));
-    return;
-  }
-  if (!level.prev || level.t >= 0.999) {
-    blitPatch(out, patch, w);
-    return;
-  }
-  blitPatch(out, prev, w);
-  const cx = 256, cy = 249, rx = 36, ry = 20;
-  blitPatch(out, patch, w, (x, y) => {
-    const u = (x - cx) / rx;
-    const v = (y - cy) / ry;
-    return Math.hypot(u, v) <= Math.max(0.15, level.t);
-  });
+  const frames = parts && parts.mouths;
+  if (!frames || !frames.length) return;
+  blitPatch(out, frames[mouthFrameIndex(state, frames.length)], w);
 }
 
 function paintBrows(out, neutral, w, state) {
